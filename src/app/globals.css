@@ -1,26 +1,33 @@
+/* Load Tailwind CSS utilities for the whole website. */
 @import "tailwindcss";
 
+/*
+ * DESIGN TOKENS
+ * These reusable variables keep colors consistent.
+ * We will use them in all website components.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-primary: #176b50;
+  --color-secondary: #0d9488;
+  --color-accent: #f5b841;
+  --color-background: #f8faf7;
+  --color-foreground: #142b25;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Apply the primary background and text colors globally. */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Use the same box-sizing behavior in all elements. */
+* {
+  box-sizing: border-box;
+}
+
+/* Make keyboard navigation easier to see. */
+:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 3px;
 }
