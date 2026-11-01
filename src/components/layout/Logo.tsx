@@ -34,9 +34,9 @@ export default function Logo() {
           CommunityBond
         </span>
 
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#176B50]">
-          Together for Good
-        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">
+  Together for Good
+</span>
       </span>
     </Link>
   );

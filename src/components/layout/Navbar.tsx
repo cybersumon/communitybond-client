@@ -1,52 +1,49 @@
+
 import Link from "next/link";
+
 import Logo from "./Logo";
+import NavLinks from "./NavLinks";
+import MobileMenu from "./MobileMenu";
+import ThemeToggle from "./ThemeToggle";
 
 /**
  * Navbar Component
  *
  * PURPOSE:
- * Show the website branding and main navigation links.
+ * Assemble the desktop and mobile navigation.
  *
- * HOW:
- * Imports the reusable Logo component and Next.js Link.
- *
- * NOTE:
- * Authentication and mobile menu will be added in
- * a separate lesson using independent components.
+ * All interactive features remain in their own
+ * independent components.
  */
 export default function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-black/5 bg-white/95 backdrop-blur-md">
-      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-        
-        {/* Reusable website logo. */}
+    <header className="sticky top-0 z-50 border-b border-(--color-border) bg-(--color-surface) backdrop-blur-md">
+      <div className="relative mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
+
+        {/* Shared branding. */}
         <Logo />
 
-        {/* Desktop navigation links. */}
-        <div className="hidden items-center gap-8 md:flex">
+        {/* Desktop links. */}
+        <NavLinks />
+
+        {/* Navbar actions. */}
+        <div className="flex items-center gap-3">
+
+          {/* Theme toggle works on all screen sizes. */}
+          <ThemeToggle />
+
+          {/* Desktop login button. */}
           <Link
-            href="/"
-            className="font-medium transition-colors hover:text-[#176B50]"
+            href="/login"
+            className="hidden rounded-xl bg-[#176B50] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#11513D] md:inline-flex"
           >
-            Home
+            Login
           </Link>
 
-          <Link
-            href="/upcoming-events"
-            className="font-medium transition-colors hover:text-[#176B50]"
-          >
-            Upcoming Events
-          </Link>
+          {/* Mobile navigation component. */}
+          <MobileMenu />
         </div>
-
-        {/* Login navigation; auth state comes later. */}
-        <Link
-          href="/login"
-          className="rounded-xl bg-[#176B50] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#11513D]"
-        >
-          Login
-        </Link>
-      </nav>
+      </div>
     </header>
   );
 }

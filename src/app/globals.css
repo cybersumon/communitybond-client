@@ -1,32 +1,60 @@
-/* Load Tailwind CSS utilities for the whole website. */
+
 @import "tailwindcss";
 
 /*
- * DESIGN TOKENS
- * These reusable variables keep colors consistent.
- * We will use them in all website components.
+ * Tailwind CSS v4:
+ * Activate dark: utilities using the .dark class.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * LIGHT THEME
+ * Default design colors.
  */
 :root {
   --color-primary: #176b50;
   --color-secondary: #0d9488;
   --color-accent: #f5b841;
+
   --color-background: #f8faf7;
   --color-foreground: #142b25;
+  --color-surface: #ffffff;
+  --color-muted: #52645c;
+  --color-border: #dce7df;
+  --color-hero: #f0f8f3;
 }
 
-/* Apply the primary background and text colors globally. */
+/*
+ * DARK THEME
+ * Overrides the default variables when
+ * next-themes adds .dark to the HTML element.
+ */
+.dark {
+  --color-primary: #34d399;
+  --color-secondary: #5eead4;
+  --color-accent: #f5b841;
+
+  --color-background: #0b1915;
+  --color-foreground: #eaf8ee;
+  --color-surface: #152b23;
+  --color-muted: #b8d1c6;
+  --color-border: #305044;
+  --color-hero: #10251f;
+}
+
+/* Apply the selected theme to the page. */
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Use the same box-sizing behavior in all elements. */
+/* Standardize element sizing. */
 * {
   box-sizing: border-box;
 }
 
-/* Make keyboard navigation easier to see. */
+/* Accessible keyboard focus indicator. */
 :focus-visible {
   outline: 2px solid var(--color-secondary);
   outline-offset: 3px;

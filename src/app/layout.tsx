@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/layout/Navbar";
 import "./globals.css";
+import ThemeProvider from "@/providers/ThemeProvider";
 
 /**
  * SEO metadata for the website.
@@ -28,12 +29,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+   <html lang="en" suppressHydrationWarning>
       <body>
+        <ThemeProvider>
         <Navbar />
 
         {/* Render the currently active page. */}
         {children}
+        </ThemeProvider>
       </body>
     </html>
   );
