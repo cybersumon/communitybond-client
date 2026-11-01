@@ -61,4 +61,5 @@ export const features: FeatureItem[] = [
       "Turn small acts of kindness into meaningful positive change for people around you.",
     icon: HeartHandshake,
   },
+
 ];

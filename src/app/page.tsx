@@ -1,6 +1,7 @@
 
 import HeroSection from "@/components/home/HeroSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
+import RecentEventsSection from "@/components/home/RecentEventsSection";
 
 /**
  * HomePage
@@ -20,6 +21,9 @@ export default function HomePage() {
 
       {/* Platform feature cards. */}
       <FeaturesSection />
+
+       {/* Latest six upcoming community events. */}
+      <RecentEventsSection />
     </main>
   );
 }
