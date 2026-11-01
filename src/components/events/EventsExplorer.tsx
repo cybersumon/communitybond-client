@@ -64,7 +64,9 @@ export default function EventsExplorer({
         // Match title or location against the search.
         const matchesSearch =
           event.title.toLowerCase().includes(searchText) ||
-          event.location.toLowerCase().includes(searchText);
+          event.location.toLowerCase().includes(searchText) ||
+           event.description.toLowerCase().includes(searchText)||
+          event.organizer.name.toLowerCase().includes(searchText);
 
         // Allow every category when "All" is selected.
         const matchesCategory =
