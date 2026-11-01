@@ -32,7 +32,7 @@ export default function NavLinks() {
         <Link
           key={item.href}
           href={item.href}
-          className="text-sm font-semibold text-[var(--color-foreground)] transition-colors hover:text-[#176B50]"
+          className="text-sm font-semibold text-(--color-foreground) transition-colors hover:text-[#176B50]"
         >
           {item.label}
         </Link>
