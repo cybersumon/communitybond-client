@@ -1,18 +1,25 @@
+
 import HeroSection from "@/components/home/HeroSection";
+import FeaturesSection from "@/components/home/FeaturesSection";
 
 /**
  * HomePage
  *
  * PURPOSE:
- * Assemble independent homepage sections.
+ * Compose independent homepage sections.
  *
- * Each major section is implemented in its own file.
+ * WHY:
+ * We keep route files small.
+ * Each section has its own component and responsibility.
  */
 export default function HomePage() {
   return (
     <main>
-      {/* Website introduction and main CTA section. */}
+      {/* Main hero with headline, image and actions. */}
       <HeroSection />
+
+      {/* Platform feature cards. */}
+      <FeaturesSection />
     </main>
   );
 }
