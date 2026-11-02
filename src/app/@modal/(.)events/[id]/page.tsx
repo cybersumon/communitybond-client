@@ -3,38 +3,36 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { X } from "lucide-react";
 
-import { demoEvents } from "@/data/demoEvents";
+import { getEventById } from "@/lib/api/events";
 import EventDetailsContent from "@/components/events/details/EventDetailsContent";
 
 /**
  * EventModalPage
  *
  * PURPOSE:
- * Display a selected event in a stable popup.
+ * Show real MongoDB event details inside the
+ * existing Next.js intercepted modal route.
  *
- * WHY:
- * Test 2 proved that a simple fixed overlay works.
- * We therefore avoid the problematic EventDetailsModal
- * component and its automatic close/navigation logic.
+ * DATA FLOW:
+ * Event ID -> Express API -> MongoDB
+ * -> EventDetailsContent
  *
- * HOW:
- * - Read the event ID from the URL.
- * - Find the matching event.
- * - Render a fixed overlay above the existing page.
- * - Use a normal Next.js Link to close the popup.
+ * IMPORTANT:
+ * Preserve the stable fixed-overlay approach.
+ * No router.back(), useEffect(), or dialog.showModal().
  */
 export default async function EventModalPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // Get the event ID from the dynamic route.
+  // Read the MongoDB event ID from the route.
   const { id } = await params;
 
-  // Find the selected event in our temporary demo data.
-  const event = demoEvents.find((item) => item.id === id);
+  // Fetch the selected event from Express API.
+  const event = await getEventById(id);
 
-  // Show a 404 if the requested event does not exist.
+  // Show 404 when the event does not exist.
   if (!event) {
     notFound();
   }
@@ -42,20 +40,19 @@ export default async function EventModalPage({
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-5">
 
-      {/* Main popup window, maximum width 800px. */}
+      {/* Same stable popup container as before. */}
       <section
         role="dialog"
         aria-modal="true"
         aria-label={`Details for ${event.title}`}
         className="relative h-[80dvh] max-h-180 w-full max-w-200 overflow-hidden rounded-3xl bg-(--color-surface) text-(--color-foreground) shadow-2xl"
       >
-        {/* Reusable event details component. */}
+        {/* Existing hero, mission section and guidelines. */}
         <div className="h-full">
           <EventDetailsContent event={event} />
         </div>
 
-        {/* Close using a normal route link.
-            No router.back(), effects or automatic closing. */}
+        {/* Close without triggering the old modal blink. */}
         <Link
           href="/upcoming-events"
           scroll={false}
