@@ -1,17 +1,21 @@
 
 import { createAuthClient } from "better-auth/react";
+import { jwtClient } from "better-auth/client/plugins";
 
 /**
- * Better Auth React Client
+ * CommunityBond Authentication Client
  *
  * PURPOSE:
- * Provide authentication methods to React.
+ * Manage authentication from React components.
  *
- * USAGE:
- * authClient.signUp.email(...)
- * authClient.signIn.email(...)
- * authClient.signOut()
- * authClient.useSession()
+ * FEATURES:
+ * - Email/password login
+ * - Google login
+ * - Session management
+ * - JWT access for Express.js
  */
-
-export const authClient = createAuthClient();
+export const authClient = createAuthClient({
+  plugins: [
+    jwtClient(),
+  ],
+});

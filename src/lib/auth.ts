@@ -3,6 +3,7 @@ import "server-only";
 
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
+import { jwt } from "better-auth/plugins";
 
 import {
   mongoClient,
@@ -17,9 +18,10 @@ import {
  * - Email/password login
  * - Google OAuth login
  * - MongoDB-backed sessions
+ * - JWT support for Express.js API
  */
 
-// Validate required Google OAuth settings.
+// Validate Google OAuth credentials.
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
@@ -30,21 +32,22 @@ if (!googleClientId || !googleClientSecret) {
 }
 
 export const auth = betterAuth({
+  // Better Auth configuration.
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
 
-  // Reuse the working MongoDB connection.
+  // Connect Better Auth to MongoDB.
   database: mongodbAdapter(authDatabase, {
     client: mongoClient,
   }),
 
-  // Keep existing email/password authentication.
+  // Email/password authentication.
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
   },
 
-  // Enable Google OAuth authentication.
+  // Google OAuth authentication.
   socialProviders: {
     google: {
       clientId: googleClientId,
@@ -52,5 +55,11 @@ export const auth = betterAuth({
     },
   },
 
+  // Enable JWT support for the Express API.
+  plugins: [
+    jwt(),
+  ],
+
+  // Allowed frontend origin.
   trustedOrigins: ["http://localhost:3000"],
 });
