@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { navigationLinks } from "./NavLinks";
+import AuthNav from "../shared/AuthNav";
 
 /**
  * MobileMenu Component
@@ -67,13 +68,14 @@ export default function MobileMenu() {
             ))}
 
             {/* Authentication will become dynamic later. */}
-            <Link
+            {/* <Link
               href="/login"
               onClick={() => setIsOpen(false)}
               className="mt-2 rounded-xl bg-[#176B50] px-4 py-3 text-center text-sm font-semibold text-white"
             >
               Login
-            </Link>
+            </Link> */}
+            <AuthNav />
           </div>
         </nav>
       )}

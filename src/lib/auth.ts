@@ -10,42 +10,47 @@ import {
 } from "./auth-db";
 
 /**
- * Better Auth Configuration
+ * CommunityBond Authentication
  *
- * PURPOSE:
- * Configure user authentication and sessions.
- *
- * CURRENT FEATURES:
+ * FEATURES:
  * - Email/password registration
  * - Email/password login
- * - Logout
- * - Database-backed sessions
- *
- * NEXT:
- * - Google OAuth
- * - Email verification
- * - JWT integration with Express
+ * - Google OAuth login
+ * - MongoDB-backed sessions
  */
 
-export const auth = betterAuth({
-  // Main authentication website.
-  baseURL: process.env.BETTER_AUTH_URL,
+// Validate required Google OAuth settings.
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-  // Secret used for authentication security.
+if (!googleClientId || !googleClientSecret) {
+  throw new Error(
+    "Google OAuth credentials are missing in .env.local"
+  );
+}
+
+export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
 
-  // Store authentication data in MongoDB.
+  // Reuse the working MongoDB connection.
   database: mongodbAdapter(authDatabase, {
     client: mongoClient,
   }),
 
-  // Enable email and password authentication.
+  // Keep existing email/password authentication.
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
   },
 
-  // Only allow the local Next.js app during development.
+  // Enable Google OAuth authentication.
+  socialProviders: {
+    google: {
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+    },
+  },
+
   trustedOrigins: ["http://localhost:3000"],
 });
- 

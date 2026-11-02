@@ -14,7 +14,7 @@ import {
 
 import { authClient } from "@/lib/auth-client";
 import PasswordInput from "./PasswordInput";
-
+import GoogleSignInButton from "./GoogleSignInButton";
 /**
  * AuthForm
  *
@@ -280,6 +280,21 @@ export default function AuthForm({ mode }: AuthFormProps) {
           )}
         </button>
       </form>
+
+{/* Divider between password and social login. */}
+<div className="my-6 flex items-center gap-4">
+  <div className="h-px flex-1 bg-(--color-border)" />
+
+  <span className="text-xs font-medium text-(--color-muted)">
+    or continue with
+  </span>
+
+  <div className="h-px flex-1 bg-(--color-border)" />
+</div>
+
+{/* Google OAuth sign-in works for login and registration. */}
+<GoogleSignInButton />
+
 
       {/* Switch between authentication modes. */}
       <p className="mt-7 text-center text-sm text-(--color-muted)">

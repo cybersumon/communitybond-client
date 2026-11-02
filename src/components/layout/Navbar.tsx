@@ -5,6 +5,7 @@ import Logo from "./Logo";
 import NavLinks from "./NavLinks";
 import MobileMenu from "./MobileMenu";
 import ThemeToggle from "./ThemeToggle";
+import AuthNav from "../shared/AuthNav";
 
 /**
  * Navbar Component
@@ -31,14 +32,15 @@ export default function Navbar() {
 
           {/* Theme toggle works on all screen sizes. */}
           <ThemeToggle />
+           <AuthNav />
 
           {/* Desktop login button. */}
-          <Link
+          {/* <Link
             href="/login"
             className="hidden rounded-xl bg-[#176B50] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#11513D] md:inline-flex"
           >
             Login
-          </Link>
+          </Link> */}
 
           {/* Mobile navigation component. */}
           <MobileMenu />
