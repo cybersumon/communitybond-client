@@ -13,75 +13,68 @@ import type { EventCategory } from "./EventCategoryFilter";
 /**
  * EventsExplorer Props
  *
- * events: The event collection supplied by the page.
- * currentTime: A stable server-generated timestamp.
+ * Events are loaded from the Express API
+ * by the parent Next.js Server Component.
  */
 type EventsExplorerProps = {
   events: CommunityEvent[];
-  currentTime: string;
 };
 
 /**
  * EventsExplorer
  *
  * PURPOSE:
- * Manage search, category filtering and event sorting.
- *
- * WHY "use client":
- * Search and filter buttons require React state
- * and browser interaction.
+ * Manage client-side search and category filtering.
  *
  * DATA FLOW:
- * Input -> State -> Filter -> EventGrid -> EventCard
+ * MongoDB -> Express API -> Next.js Page
+ * -> EventsExplorer -> EventGrid
+ *
+ * NOTE:
+ * The backend already filters upcoming events
+ * and sorts them by event date.
  */
 export default function EventsExplorer({
   events,
-  currentTime,
 }: EventsExplorerProps) {
-  // Store the text entered in the search input.
+  // Search input value.
   const [search, setSearch] = useState("");
 
-  // Store the currently selected event category.
+  // Selected category.
   const [category, setCategory] =
     useState<EventCategory>("All");
 
   /**
-   * Calculate the visible events.
+   * Filter the events supplied by the server.
    *
-   * useMemo caches the result until its dependencies change.
-   * This is optional for small lists but useful to learn.
+   * We do not filter by date again because
+   * GET /api/events already returns upcoming events.
    */
   const filteredEvents = useMemo(() => {
     const searchText = search.trim().toLowerCase();
-    const cutoff = new Date(currentTime).getTime();
 
-    return events
-      .filter((event) => {
-        // Hide events whose dates have already passed.
-        const isUpcoming =
-          new Date(event.eventDate).getTime() > cutoff;
+    return events.filter((event) => {
+      // Match searchable event fields.
+      const matchesSearch =
+        event.title.toLowerCase().includes(searchText) ||
+        event.location.toLowerCase().includes(searchText) ||
+        event.description.toLowerCase().includes(searchText) ||
+        event.organizer.name
+          .toLowerCase()
+          .includes(searchText);
 
-        // Match title or location against the search.
-        const matchesSearch =
-          event.title.toLowerCase().includes(searchText) ||
-          event.location.toLowerCase().includes(searchText) ||
-           event.description.toLowerCase().includes(searchText)||
-          event.organizer.name.toLowerCase().includes(searchText);
+      // Match the selected event category.
+      const matchesCategory =
+        category === "All" ||
+        event.eventType === category;
 
-        // Allow every category when "All" is selected.
-        const matchesCategory =
-          category === "All" || event.eventType === category;
+      return matchesSearch && matchesCategory;
+    });
+  }, [events, search, category]);
 
-        return isUpcoming && matchesSearch && matchesCategory;
-      })
-      .sort(
-        (a, b) =>
-          new Date(a.eventDate).getTime() -
-          new Date(b.eventDate).getTime()
-      );
-  }, [events, search, category, currentTime]);
-
-  // Reset both filters to their initial state.
+  /**
+   * Reset search and category filters.
+   */
   function clearFilters() {
     setSearch("");
     setCategory("All");
@@ -99,7 +92,7 @@ export default function EventsExplorer({
         />
       </div>
 
-      {/* Result count and filter reset. */}
+      {/* Result count and reset button. */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p
           role="status"
@@ -123,7 +116,7 @@ export default function EventsExplorer({
         )}
       </div>
 
-      {/* Reuse the EventGrid from Lesson 09. */}
+      {/* Existing event cards and grid. */}
       <EventGrid events={filteredEvents} />
     </div>
   );

@@ -1,14 +1,20 @@
+
 import type { NextConfig } from "next";
 
+/**
+ * Next.js Configuration
+ *
+ * Allow optimized external images from Unsplash.
+ */
 const nextConfig: NextConfig = {
-  /* config options here */
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
       },
-    },
+    ],
   },
 };
 

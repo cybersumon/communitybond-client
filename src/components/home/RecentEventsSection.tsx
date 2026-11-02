@@ -4,7 +4,10 @@ import { ArrowRight } from "lucide-react";
 
 import SectionHeading from "@/components/shared/SectionHeading";
 import EventGrid from "@/components/events/EventGrid";
-import { demoEvents } from "@/data/demoEvents";
+import { getRecentEvents } from "@/lib/api/events";
+
+
+/* import { demoEvents } from "@/data/demoEvents"; */
 
 /**
  * RecentEventsSection
@@ -19,20 +22,20 @@ import { demoEvents } from "@/data/demoEvents";
  * Express + MongoDB will perform this query with
  * .find(), .sort() and .limit(6).
  */
-export default function RecentEventsSection() {
+export default async function RecentEventsSection() {
   // Get the current time to exclude expired events.
-  const now = new Date();
+   const recentEvents = await getRecentEvents();
 
   // Filter upcoming events, sort by creation time,
   // and keep the first six for our temporary demo.
-  const recentEvents = demoEvents
-    .filter((event) => new Date(event.eventDate) > now)
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime()
-    )
-    .slice(0, 6);
+  // const recentEvents = events
+  //   .filter((event) => new Date(event.eventDate) > now)
+  //   .sort(
+  //     (a, b) =>
+  //       new Date(b.createdAt).getTime() -
+  //       new Date(a.createdAt).getTime()
+  //   )
+  //   .slice(0, 6);
 
   return (
     <section className="bg-(--color-hero) px-5 py-20 sm:py-24 lg:px-8 lg:py-28">

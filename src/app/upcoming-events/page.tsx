@@ -1,62 +1,46 @@
 
-import type { Metadata } from "next";
-
+import { getEvents } from "@/lib/api/events";
 import EventsExplorer from "@/components/events/EventsExplorer";
-import { demoEvents } from "@/data/demoEvents";
-
-/**
- * Page metadata used by Next.js for SEO.
- */
-export const metadata: Metadata = {
-  title: "Upcoming Events | CommunityBond",
-  description:
-    "Explore upcoming community service and volunteering events.",
-};
 
 /**
  * UpcomingEventsPage
  *
  * PURPOSE:
- * Display all future community events.
+ * Fetch all upcoming events from our Express API
+ * and pass them into the interactive event explorer.
  *
- * ARCHITECTURE:
- * This page is a Server Component.
- * EventsExplorer is the interactive Client Component.
+ * Server Component:
+ * Fetch data from MongoDB through Express.
  *
- * CURRENT PHASE:
- * Uses demo data until the Express API is ready.
+ * Client Component:
+ * Handle search and category filtering.
  */
-export default function UpcomingEventsPage() {
-  // Pass one stable timestamp to the interactive explorer.
-  const currentTime = new Date().toISOString();
+export default async function UpcomingEventsPage() {
+  // Get real upcoming events from MongoDB.
+  const events = await getEvents();
 
   return (
     <main className="min-h-screen bg-(--color-background)">
-      {/* Public page introduction. */}
-      <section className="bg-(--color-hero) px-5 py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl">
-          <p className="mb-4 text-sm font-bold uppercase tracking-widest text-(--color-primary)">
-            Discover & Participate
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+
+        <div className="mb-10">
+          <p className="text-sm font-semibold text-(--color-primary)">
+            Explore Opportunities
           </p>
 
-          <h1 className="text-4xl font-extrabold tracking-tight text-(--color-foreground) sm:text-5xl">
-            Explore Community Events
+          <h1 className="mt-3 text-3xl font-bold text-(--color-foreground)">
+            Upcoming Events
           </h1>
 
-          <p className="mt-5 max-w-2xl text-base leading-7 text-(--color-muted)">
-            Find opportunities to volunteer, support local
-            causes and make a lasting difference.
+          <p className="mt-3 text-(--color-muted)">
+            Discover community initiatives and find meaningful
+            ways to make a difference.
           </p>
         </div>
-      </section>
 
-      {/* Interactive events search and results. */}
-      <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
-        <EventsExplorer
-          events={demoEvents}
-          currentTime={currentTime}
-        />
-      </section>
+        {/* Pass real data to the existing interactive explorer. */}
+        <EventsExplorer events={events} />
+      </div>
     </main>
   );
 }

@@ -1,10 +1,10 @@
-
+import "./globals.css";
 import type { Metadata } from "next";
 
 import Navbar from "@/components/layout/Navbar";
 import ThemeProvider from "@/providers/ThemeProvider";
 
-import "./globals.css";
+
 
 /**
  * Global website metadata.
