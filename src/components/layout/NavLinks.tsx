@@ -34,9 +34,15 @@ export default function NavLinks() {
           href={item.href}
           className="text-sm font-semibold text-(--color-foreground) transition-colors hover:text-[#176B50]"
         >
+
+          
           {item.label}
         </Link>
+
+        
       ))}
+
+      
     </div>
   );
 }

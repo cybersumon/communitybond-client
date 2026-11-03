@@ -10,9 +10,12 @@ import {
   LogOut,
   UserRound,
   LoaderCircle,
+   CalendarPlus,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
+
+
 
 /**
  * AuthNav
@@ -150,8 +153,24 @@ export default function AuthNav() {
             </p>
           </div>
 
-          {/* Profile navigation will be added
-              when the profile page is implemented. */}
+{/* Create Event navigation */}
+<Link
+  href="/create-event"
+  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-(--color-foreground) transition hover:bg-(--color-background) hover:text-(--color-primary)"
+>
+  <CalendarPlus
+    size={17}
+    aria-hidden="true"
+    className="text-(--color-primary)"
+  />
+  Create Event
+</Link>
+
+{/* Dropdown divider */}
+<div className="my-2 border-t border-(--color-border)" />
+
+
+
 
           <button
             type="button"

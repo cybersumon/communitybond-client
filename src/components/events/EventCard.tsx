@@ -61,13 +61,16 @@ export default function EventCard({ event }: EventCardProps) {
 
       {/* Large image with subtle hover zoom. */}
       <div className="relative h-58 overflow-hidden bg-(--color-hero)">
-        <Image
-          src={event.thumbnailUrl}
-          alt={event.title}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        
+<Image
+  src={event.thumbnailUrl}
+  alt={event.title}
+  fill
+  unoptimized
+  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+  className="object-cover transition-transform duration-500 group-hover:scale-105"
+/>
+
 
         {/* Subtle gradient behind the date badge. */}
         <div

@@ -1,11 +1,13 @@
 "use client";
 
-import { ThemeProvider as NextThemesProvider } from "next-themes";
 import type { ReactNode } from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 
 /**
- * Provides theme settings to all nested components.
- * The selected theme is applied as a class on <html>.
+ * CommunityBond Theme Provider
+ *
+ * PURPOSE:
+ * Support light, dark and system themes.
  */
 export default function ThemeProvider({
   children,

@@ -41,13 +41,16 @@ export default function EventDetailsHero({
     <section className="relative h-full w-full overflow-hidden bg-[#142B25]">
 
       {/* Full background image, covering all hero space. */}
-      <Image
-        src={event.thumbnailUrl}
-        alt={event.title}
-        fill
-        sizes="(max-width: 768px) 100vw, 820px"
-        className="object-cover"
-      />
+      
+{/* Full background image, covering all hero space. */}
+<Image
+  src={event.thumbnailUrl}
+  alt={event.title}
+  fill
+  unoptimized
+  sizes="(max-width: 768px) 100vw, 900px"
+  className="object-cover"
+/>
 
       {/* Gradient appears ON TOP of the image, not below it. */}
       <div
