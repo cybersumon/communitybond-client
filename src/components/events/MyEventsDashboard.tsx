@@ -2,533 +2,697 @@
 "use client";
 
 import {
-  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
+
+import Image from "next/image";
 import Link from "next/link";
 
 import {
   CalendarDays,
-  CalendarPlus,
   Clock3,
-  Eye,
-  LoaderCircle,
   MapPin,
-  RefreshCw,
   Search,
-  ShieldCheck,
+  CalendarCheck2,
+  CalendarClock,
+  LayoutGrid,
   ArrowUpRight,
-  Inbox,
-  AlertCircle,
+  Plus,
+  RotateCcw,
+  Pencil,
+  LoaderCircle,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
-import { getMyEvents } from "@/lib/api/my-events";
-import type { CommunityEvent } from "@/types/event";
+import DeleteEventButton from "./DeleteEventButton";
 
 /**
  * MyEventsDashboard
  *
  * PURPOSE:
- * Display events created by the current user.
+ * Allow authenticated organizers to manage
+ * all events they have created.
  *
  * FEATURES:
- * - Authenticated API request
- * - Statistics
- * - Search
- * - Status filtering
- * - Event details navigation
- * - Loading, error and empty states
+ * - Secure JWT authenticated event fetching
+ * - Total, upcoming, and past statistics
+ * - Search events
+ * - Filter by event status
+ * - View event details
+ * - Edit event
+ * - Delete event with confirmation
+ * - Instant UI update after deletion
+ * - Responsive layout
+ * - Dark mode support
  *
  * SECURITY:
- * The backend filters events using the verified JWT.
+ * The Express backend determines which events
+ * belong to the authenticated organizer.
  */
 
-type FilterStatus = "all" | "upcoming" | "past";
+type EventStatusFilter =
+  | "all"
+  | "upcoming"
+  | "past";
 
-const filters: {
-  label: string;
-  value: FilterStatus;
-}[] = [
-  { label: "All Events", value: "all" },
-  { label: "Upcoming", value: "upcoming" },
-  { label: "Past Events", value: "past" },
-];
+interface CommunityEvent {
+  id: string;
+  title: string;
+  description: string;
+  eventType: string;
+  thumbnailUrl: string;
+  location: string;
+  eventDate: string;
+  createdAt: string;
+  organizer: {
+    id: string;
+    name: string;
+    photoURL?: string;
+  };
+}
 
-export default function MyEventsDashboard() {
-  const { data: session, isPending } =
-    authClient.useSession();
+interface EventsApiResponse {
+  success: boolean;
+  message?: string;
+  data?: CommunityEvent[];
+  events?: CommunityEvent[];
+}
 
-  const userId = session?.user?.id;
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "http://localhost:5001";
 
-  const [events, setEvents] =
-    useState<CommunityEvent[]>([]);
+/**
+ * Format ISO datetime for display.
+ */
+function formatEventDate(value: string): string {
+  const date = new Date(value);
 
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [search, setSearch] = useState("");
-  const [status, setStatus] =
-    useState<FilterStatus>("all");
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
 
-  // Refresh statistics periodically on interaction,
-  // not through a background polling timer.
-  const [now, setNow] = useState(() => Date.now());
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
 
-  /**
-   * Load events using the Better Auth JWT.
-   */
-  const loadEvents = useCallback(
-    async (signal?: AbortSignal) => {
-      setLoading(true);
-      setErrorMessage("");
+/**
+ * Format event time in the browser's timezone.
+ */
+function formatEventTime(value: string): string {
+  const date = new Date(value);
 
-      try {
-        const { data, error } =
-          await authClient.token();
+  if (Number.isNaN(date.getTime())) {
+    return "Time unavailable";
+  }
 
-        if (signal?.aborted) return;
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
 
-        if (error || !data?.token) {
-          throw new Error(
-            "Unable to verify your session. Please sign in again."
-          );
-        }
+/**
+ * Determine whether an event is upcoming.
+ */
+function isUpcomingEvent(
+  event: CommunityEvent,
+  now: number
+): boolean {
+  return new Date(event.eventDate).getTime() >= now;
+}
 
-        const results = await getMyEvents(
-          data.token,
-          signal
-        );
+/**
+ * Statistics card.
+ */
+function StatCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+}: {
+  title: string;
+  value: number;
+  description: string;
+  icon: typeof LayoutGrid;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30 sm:p-6 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            {title}
+          </p>
 
-        if (signal?.aborted) return;
+          <p className="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
+            {value}
+          </p>
+        </div>
 
-        setEvents(results);
-        setNow(Date.now());
-      } catch (error) {
-        if (signal?.aborted) return;
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+          <Icon size={20} strokeWidth={1.8} />
+        </div>
+      </div>
 
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Unable to load your events."
-        );
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false);
-        }
-      }
-    },
-    []
+      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        {description}
+      </p>
+    </div>
   );
+}
+
+/**
+ * Organizer event card.
+ *
+ * The card provides three actions:
+ * View Details, Edit, and Delete.
+ */
+function MyEventCard({
+  event,
+  now,
+  onDeleted,
+}: {
+  event: CommunityEvent;
+  now: number;
+  onDeleted: (eventId: string) => void;
+}) {
+  const upcoming = isUpcomingEvent(event, now);
+
+  return (
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
+      {/* Event thumbnail */}
+      <div className="relative h-48 overflow-hidden bg-slate-100 sm:h-52 dark:bg-slate-800">
+        <Image
+          src={event.thumbnailUrl}
+          alt={event.title}
+          fill
+          unoptimized
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+
+        {/* Status badge */}
+        <div className="absolute left-4 top-4">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm backdrop-blur ${
+              upcoming
+                ? "bg-emerald-500 text-white"
+                : "bg-slate-900/85 text-white"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {upcoming ? "Upcoming" : "Past Event"}
+          </span>
+        </div>
+
+        {/* Event category */}
+        <div className="absolute bottom-4 left-4">
+          <span className="rounded-lg bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm dark:bg-slate-950/90 dark:text-white">
+            {event.eventType}
+          </span>
+        </div>
+      </div>
+
+      {/* Event information */}
+      <div className="flex flex-1 flex-col p-5">
+        <Link
+          href={`/events/${event.id}?returnTo=/my-events`}
+          className="block"
+        >
+          <h3 className="line-clamp-2 text-lg font-bold leading-snug tracking-tight text-slate-900 transition hover:text-blue-600 dark:text-white dark:hover:text-blue-400">
+            {event.title}
+          </h3>
+        </Link>
+
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+          {event.description}
+        </p>
+
+        {/* Event metadata */}
+        <div className="mt-5 space-y-3">
+          <div className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300">
+            <CalendarDays
+              size={16}
+              className="shrink-0 text-blue-600 dark:text-blue-400"
+            />
+            <span>{formatEventDate(event.eventDate)}</span>
+          </div>
+
+          <div className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300">
+            <Clock3
+              size={16}
+              className="shrink-0 text-blue-600 dark:text-blue-400"
+            />
+            <span>{formatEventTime(event.eventDate)}</span>
+          </div>
+
+          <div className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-300">
+            <MapPin
+              size={16}
+              className="mt-0.5 shrink-0 text-blue-600 dark:text-blue-400"
+            />
+            <span className="line-clamp-2">
+              {event.location}
+            </span>
+          </div>
+        </div>
+
+        {/* Push actions to card bottom */}
+        <div className="mt-auto pt-5">
+          <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <Link
+              href={`/events/${event.id}?returnTo=/my-events`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              View Details
+              <ArrowUpRight size={15} />
+            </Link>
+
+            <Link
+              href={`/events/${event.id}/edit`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:text-blue-600 dark:border-slate-700 dark:text-slate-200 dark:hover:text-blue-400"
+            >
+              <Pencil size={15} />
+              Edit
+            </Link>
+
+            <DeleteEventButton
+              eventId={event.id}
+              eventTitle={event.title}
+              onDeleted={onDeleted}
+            />
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/**
+ * Main My Events dashboard.
+ */
+export default function MyEventsDashboard() {
+  // Better Auth session.
+  const {
+    data: session,
+    isPending: sessionPending,
+  } = authClient.useSession();
+
+  // Events data.
+  const [events, setEvents] = useState<CommunityEvent[]>([]);
+
+  // UI states.
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] =
+    useState<EventStatusFilter>("all");
 
   /**
-   * Fetch when an authenticated user is available.
+   * Fetch only the authenticated user's events.
+   *
+   * The backend uses the verified JWT user ID,
+   * rather than accepting a user ID from the client.
    */
   useEffect(() => {
-    if (isPending || !userId) return;
+    if (sessionPending) return;
+
+    if (!session?.user) {
+      setEvents([]);
+      setLoading(false);
+      setError("Please log in to view your events.");
+      return;
+    }
 
     const controller = new AbortController();
 
-    void loadEvents(controller.signal);
+    async function loadMyEvents() {
+      setLoading(true);
+      setError("");
+
+      try {
+        // Retrieve Better Auth JWT.
+        const tokenResponse = await authClient.token();
+
+        if (controller.signal.aborted) return;
+
+        const token = tokenResponse.data?.token;
+
+        if (!token) {
+          throw new Error(
+            "Unable to verify your session. Please log in again."
+          );
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/events/my`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            cache: "no-store",
+            signal: controller.signal,
+          }
+        );
+
+        const result =
+          (await response.json()) as EventsApiResponse;
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message ?? "Unable to load your events."
+          );
+        }
+
+        // Supports { data: [...] } or { events: [...] }.
+        const fetchedEvents =
+          result.data ?? result.events;
+
+        if (!Array.isArray(fetchedEvents)) {
+          throw new Error("Invalid events API response.");
+        }
+
+        if (!controller.signal.aborted) {
+          setEvents(fetchedEvents);
+        }
+      } catch (err) {
+        if (controller.signal.aborted) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Something went wrong while loading events."
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadMyEvents();
 
     return () => controller.abort();
-  }, [isPending, userId, loadEvents]);
+  }, [session?.user?.id, sessionPending]);
 
   /**
-   * Calculate dashboard statistics.
+   * Delete success callback.
+   *
+   * DeleteEventButton calls this function only
+   * after the backend confirms deletion.
+   *
+   * No full page refresh is required.
    */
-  const statistics = useMemo(() => {
-    const upcoming = events.filter(
-      (event) =>
-        new Date(event.eventDate).getTime() >= now
-    ).length;
-
-    return {
-      total: events.length,
-      upcoming,
-      past: events.length - upcoming,
-    };
-  }, [events, now]);
-
-  /**
-   * Apply status and search filters.
-   */
-  const filteredEvents = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    return events.filter((event) => {
-      const eventTime =
-        new Date(event.eventDate).getTime();
-
-      const upcoming = eventTime >= now;
-
-      if (status === "upcoming" && !upcoming) {
-        return false;
-      }
-
-      if (status === "past" && upcoming) {
-        return false;
-      }
-
-      if (!keyword) return true;
-
-      return [
-        event.title,
-        event.description,
-        event.eventType,
-        event.location,
-      ].some((value) =>
-        value.toLowerCase().includes(keyword)
-      );
-    });
-  }, [events, search, status, now]);
-
-  /**
-   * Loading authentication.
-   */
-  if (isPending) {
-    return (
-      <div
-        role="status"
-        className="flex min-h-70 items-center justify-center gap-3 text-(--color-muted)"
-      >
-        <LoaderCircle
-          size={20}
-          className="animate-spin"
-        />
-        Checking your session...
-      </div>
+  function handleEventDeleted(deletedEventId: string) {
+    setEvents((previousEvents) =>
+      previousEvents.filter(
+        (event) => event.id !== deletedEventId
+      )
     );
   }
 
   /**
-   * Guest users cannot access the dashboard.
+   * Current timestamp used for event status.
+   * Statistics and filters share this value.
    */
-  if (!session?.user) {
+  const now = Date.now();
+
+  /**
+   * Dashboard statistics.
+   */
+  const totalEvents = events.length;
+
+  const upcomingCount = events.filter((event) =>
+    isUpcomingEvent(event, now)
+  ).length;
+
+  const pastCount = totalEvents - upcomingCount;
+
+  /**
+   * Search and filter events.
+   *
+   * useMemo avoids repeating filtering on
+   * unrelated component updates.
+   */
+  const filteredEvents = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return events.filter((event) => {
+      const matchesSearch =
+        event.title.toLowerCase().includes(query) ||
+        event.description.toLowerCase().includes(query) ||
+        event.eventType.toLowerCase().includes(query) ||
+        event.location.toLowerCase().includes(query);
+
+      const upcoming = isUpcomingEvent(event, now);
+
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "upcoming" && upcoming) ||
+        (filter === "past" && !upcoming);
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [events, search, filter, now]);
+
+  /**
+   * Login required state.
+   */
+  if (!sessionPending && !session?.user) {
     return (
-      <div className="rounded-3xl border border-(--color-border) bg-(--color-surface) px-6 py-12 text-center">
-        <ShieldCheck
-          size={38}
-          className="mx-auto text-(--color-primary)"
+      <div className="mx-auto max-w-xl rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center dark:border-slate-800 dark:bg-slate-900">
+        <CalendarDays
+          size={35}
+          className="mx-auto text-blue-600"
         />
 
-        <h2 className="mt-4 text-xl font-bold text-(--color-foreground)">
-          Sign in to view your events
+        <h2 className="mt-5 text-2xl font-bold text-slate-900 dark:text-white">
+          Sign in to manage events
         </h2>
 
-        <p className="mx-auto mt-3 max-w-sm text-sm text-(--color-muted)">
-          Manage the community events you have created.
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+          Please log in to view and manage the events
+          you have created.
         </p>
 
         <Link
           href="/login"
-          className="mt-6 inline-flex rounded-xl bg-(--color-primary) px-6 py-3 text-sm font-semibold text-white"
+          className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700"
         >
-          Sign in
+          Go to Login
         </Link>
       </div>
     );
   }
 
   /**
-   * Dashboard interface.
+   * Loading state.
    */
+  if (sessionPending || loading) {
+    return (
+      <div className="flex min-h-72 flex-col items-center justify-center gap-3">
+        <LoaderCircle
+          size={30}
+          className="animate-spin text-blue-600"
+        />
+
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Loading your events...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-7">
-      {/* Page header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-8">
+      {/* Dashboard header */}
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-(--color-primary)">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
             Organizer Dashboard
           </p>
 
-          <h1 className="mt-2 text-3xl font-extrabold text-(--color-foreground) sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl dark:text-white">
             My Events
           </h1>
 
-          <p className="mt-2 text-sm text-(--color-muted)">
-            View and manage your community initiatives.
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+            Manage, update, and track your community events.
           </p>
         </div>
 
         <Link
           href="/create-event"
-          className="inline-flex items-center gap-2 rounded-xl bg-(--color-primary) px-5 py-3 text-sm font-bold text-white transition hover:opacity-90"
+          className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
         >
-          <CalendarPlus size={18} />
+          <Plus size={18} />
           Create Event
         </Link>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {[
-          {
-            title: "Total Events",
-            value: statistics.total,
-            icon: CalendarDays,
-          },
-          {
-            title: "Upcoming Events",
-            value: statistics.upcoming,
-            icon: Clock3,
-          },
-          {
-            title: "Past Events",
-            value: statistics.past,
-            icon: ShieldCheck,
-          },
-        ].map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <div
-              key={item.title}
-              className="rounded-2xl border border-(--color-border) bg-(--color-surface) p-5 shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-(--color-muted)">
-                  {item.title}
-                </p>
-
-                <div className="rounded-xl bg-(--color-primary)/10 p-2.5 text-(--color-primary)">
-                  <Icon size={19} />
-                </div>
-              </div>
-
-              <p className="mt-4 text-3xl font-extrabold text-(--color-foreground)">
-                {loading ? "—" : item.value}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Search and filters */}
-      <div className="rounded-2xl border border-(--color-border) bg-(--color-surface) p-4 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative w-full lg:max-w-sm">
-            <Search
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-(--color-muted)"
-              aria-hidden="true"
-            />
-
-            <input
-              type="search"
-              value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
-              placeholder="Search your events..."
-              aria-label="Search your events"
-              className="w-full rounded-xl border border-(--color-border) bg-(--color-background) py-3 pl-11 pr-4 text-sm text-(--color-foreground) outline-none focus:border-(--color-primary)"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {filters.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                onClick={() =>
-                  setStatus(filter.value)
-                }
-                aria-pressed={status === filter.value}
-                className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                  status === filter.value
-                    ? "bg-(--color-primary) text-white"
-                    : "border border-(--color-border) text-(--color-muted) hover:text-(--color-primary)"
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-
-            <button
-              type="button"
-              onClick={() => void loadEvents()}
-              disabled={loading}
-              aria-label="Refresh my events"
-              title="Refresh events"
-              className="rounded-xl border border-(--color-border) p-2.5 text-(--color-muted) hover:text-(--color-primary) disabled:opacity-50"
-            >
-              <RefreshCw
-                size={18}
-                className={loading ? "animate-spin" : ""}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* API error */}
-      {errorMessage && (
+      {/* Error message */}
+      {error && (
         <div
           role="alert"
-          className="flex flex-wrap items-center gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+          className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
         >
-          <AlertCircle size={19} />
-          <span className="flex-1">{errorMessage}</span>
+          <span>{error}</span>
 
           <button
             type="button"
-            onClick={() => void loadEvents()}
-            className="cursor-pointer font-semibold underline"
+            onClick={() => window.location.reload()}
+            className="inline-flex shrink-0 items-center gap-1 font-semibold underline"
           >
+            <RotateCcw size={14} />
             Retry
           </button>
         </div>
       )}
 
-      {/* Loading state */}
-      {loading ? (
-        <div
-          role="status"
-          className="flex min-h-52 items-center justify-center gap-3 text-sm text-(--color-muted)"
-        >
-          <LoaderCircle
-            size={20}
-            className="animate-spin"
-          />
-          Loading your events...
-        </div>
-      ) : !errorMessage && filteredEvents.length === 0 ? (
-        /* Empty state */
-        <div className="rounded-3xl border border-(--color-border) bg-(--color-surface) px-6 py-14 text-center">
-          <Inbox
-            size={40}
-            className="mx-auto text-(--color-muted)"
+      {/* Statistics */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          title="Total Events"
+          value={totalEvents}
+          description="Events you have created"
+          icon={LayoutGrid}
+        />
+
+        <StatCard
+          title="Upcoming Events"
+          value={upcomingCount}
+          description="Events scheduled for the future"
+          icon={CalendarClock}
+        />
+
+        <StatCard
+          title="Past Events"
+          value={pastCount}
+          description="Events whose dates have passed"
+          icon={CalendarCheck2}
+        />
+      </div>
+
+      {/* Search and filters */}
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
+        <div className="relative w-full sm:max-w-sm">
+          <Search
+            size={18}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
           />
 
-          <h2 className="mt-4 text-xl font-bold text-(--color-foreground)">
-            {events.length === 0
-              ? "You have not created any events yet"
-              : "No matching events found"}
+          <input
+            type="search"
+            value={search}
+            onChange={(event) =>
+              setSearch(event.target.value)
+            }
+            placeholder="Search your events..."
+            aria-label="Search your events"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { value: "all", label: "All Events" },
+              { value: "upcoming", label: "Upcoming" },
+              { value: "past", label: "Past" },
+            ] as const
+          ).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setFilter(option.value)}
+              aria-pressed={filter === option.value}
+              className={`rounded-xl px-4 py-2.5 text-xs font-semibold transition ${
+                filter === option.value
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Event results */}
+      <section>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            Your Events
           </h2>
 
-          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-(--color-muted)">
-            {events.length === 0
-              ? "Create your first event and make a positive impact."
-              : "Try adjusting your search or selected filter."}
-          </p>
-
-          {events.length === 0 && (
-            <Link
-              href="/create-event"
-              className="mt-6 inline-flex rounded-xl bg-(--color-primary) px-5 py-3 text-sm font-bold text-white"
-            >
-              Create Your First Event
-            </Link>
-          )}
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            {filteredEvents.length}{" "}
+            {filteredEvents.length === 1
+              ? "event"
+              : "events"}
+          </span>
         </div>
-      ) : !errorMessage ? (
-        /* Events grid */
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {filteredEvents.map((event) => {
-            const eventTime =
-              new Date(event.eventDate).getTime();
 
-            const upcoming = eventTime >= now;
-
-            const formattedDate = new Intl.DateTimeFormat(
-              "en-GB",
-              {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                timeZone: "Asia/Dhaka",
-              }
-            ).format(new Date(event.eventDate));
-
-            return (
-              <article
+        {filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {filteredEvents.map((event) => (
+              <MyEventCard
                 key={event.id}
-                className="flex flex-col overflow-hidden rounded-3xl border border-(--color-border) bg-(--color-surface) shadow-sm transition hover:shadow-lg"
+                event={event}
+                now={now}
+                onDeleted={handleEventDeleted}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900">
+            <CalendarDays
+              size={34}
+              className="mx-auto text-slate-400"
+            />
+
+            <h3 className="mt-5 text-lg font-bold text-slate-900 dark:text-white">
+              {totalEvents === 0
+                ? "You haven't created any events yet"
+                : "No matching events found"}
+            </h3>
+
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500 dark:text-slate-400">
+              {totalEvents === 0
+                ? "Create your first event and start making a positive impact in your community."
+                : "Try adjusting your search or selecting a different filter."}
+            </p>
+
+            {totalEvents === 0 ? (
+              <Link
+                href="/create-event"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
               >
-                {/* Event cover */}
-                <div className="relative h-44 overflow-hidden bg-(--color-background)">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={event.thumbnailUrl}
-                    alt={event.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-
-                  <span
-                    className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-xs font-bold shadow-sm ${
-                      upcoming
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-700 text-white"
-                    }`}
-                  >
-                    {upcoming ? "Upcoming" : "Past"}
-                  </span>
-                </div>
-
-                {/* Card body */}
-                <div className="flex flex-1 flex-col p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-(--color-primary)">
-                    {event.eventType}
-                  </p>
-
-                  <h3 className="mt-2 line-clamp-2 text-lg font-bold text-(--color-foreground)">
-                    {event.title}
-                  </h3>
-
-                  <p className="mt-2 line-clamp-2 text-sm text-(--color-muted)">
-                    {event.description}
-                  </p>
-
-                  <div className="mt-5 space-y-2 text-sm text-(--color-muted)">
-                    <p className="flex items-center gap-2">
-                      <CalendarDays size={16} />
-                      {formattedDate}
-                    </p>
-
-                    <p className="flex items-center gap-2">
-                      <MapPin size={16} />
-                      <span className="truncate">
-                        {event.location}
-                      </span>
-                    </p>
-                  </div>
-
-                  {/* Action footer */}
-                  <div className="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-5 mt-5">
-                    <Link
-                      href={`/events/${event.id}?returnTo=/my-events`}
-                      className="inline-flex items-center gap-2 text-sm font-semibold text-(--color-primary) hover:underline"
-                    >
-                      <Eye size={17} />
-                      View Event
-                    </Link>
-
-<Link
-  href={`/events/${event.id}/edit`}
-  className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-500 hover:text-blue-600 dark:border-slate-700 dark:text-slate-200"
->
-  Edit Event
-</Link>
-
-                    <Link
-                      href={`/events/${event.id}?returnTo=/my-events`}
-                      aria-label={`Open ${event.title}`}
-                      className="rounded-xl border border-(--color-border) p-2.5 text-(--color-foreground) transition hover:border-(--color-primary)"
-                    >
-                      <ArrowUpRight size={18} />
-                    </Link>
-
-                                        
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      ) : null}
+                <Plus size={17} />
+                Create First Event
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setFilter("all");
+                }}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                <RotateCcw size={16} />
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

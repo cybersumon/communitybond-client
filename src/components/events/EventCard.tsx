@@ -13,6 +13,7 @@ import type { CommunityEvent } from "@/types/event";
 import EventDateBadge from "./EventDateBadge";
 import EventOrganizer from "./EventOrganizer";
 
+
 /**
  * EventCard Props
  *
@@ -147,6 +148,9 @@ export default function EventCard({
 >
   <ArrowUpRight size={21} aria-hidden="true" />
 </Link>
+
+
+
           </div>
         </div>
       </div>
