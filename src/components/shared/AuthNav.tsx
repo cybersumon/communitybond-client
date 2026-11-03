@@ -14,8 +14,7 @@ import {
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
-
-
+import { CalendarDays } from "lucide-react";
 
 /**
  * AuthNav
@@ -166,12 +165,21 @@ export default function AuthNav() {
   Create Event
 </Link>
 
+{/* My Events Dashboard navigation */}
+<Link
+  href="/my-events"
+  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-(--color-foreground) transition hover:bg-(--color-background) hover:text-(--color-primary)"
+>
+  <CalendarDays
+    size={17}
+    aria-hidden="true"
+    className="text-(--color-primary)"
+  />
+  My Events
+</Link>
+
 {/* Dropdown divider */}
 <div className="my-2 border-t border-(--color-border)" />
-
-
-
-
           <button
             type="button"
             disabled={loggingOut}
