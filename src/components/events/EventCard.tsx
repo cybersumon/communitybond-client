@@ -20,6 +20,7 @@ import EventOrganizer from "./EventOrganizer";
  */
 type EventCardProps = {
   event: CommunityEvent;
+  returnTo?: "/" | "/upcoming-events" | "/my-events";
 };
 
 /**
@@ -37,7 +38,10 @@ type EventCardProps = {
  * The event object supplies all display data.
  * The View Event link opens the public detail page.
  */
-export default function EventCard({ event }: EventCardProps) {
+export default function EventCard({
+  event,
+  returnTo = "/upcoming-events",
+}: EventCardProps) {
   // Use Dhaka time for consistent event information.
   const eventDate = new Date(event.eventDate);
 
@@ -134,12 +138,15 @@ export default function EventCard({ event }: EventCardProps) {
 
             {/* Modern compact detail-page action. */}
             <Link
-              href={`/events/${event.id}`}
-              aria-label={`View details for ${event.title}`}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#176B50] text-white transition-all hover:scale-105 hover:bg-[#11513D]"
-            >
-              <ArrowUpRight size={21} aria-hidden="true" />
-            </Link>
+  href={{
+    pathname: `/events/${event.id}`,
+    query: { returnTo },
+  }}
+  aria-label={`View details for ${event.title}`}
+  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#176B50] text-white transition-all hover:scale-105 hover:bg-[#11513D]"
+>
+  <ArrowUpRight size={21} aria-hidden="true" />
+</Link>
           </div>
         </div>
       </div>

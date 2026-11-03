@@ -499,20 +499,29 @@ export default function MyEventsDashboard() {
                   {/* Action footer */}
                   <div className="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-5 mt-5">
                     <Link
-                      href={`/events/${event.id}`}
+                      href={`/events/${event.id}?returnTo=/my-events`}
                       className="inline-flex items-center gap-2 text-sm font-semibold text-(--color-primary) hover:underline"
                     >
                       <Eye size={17} />
                       View Event
                     </Link>
 
+<Link
+  href={`/events/${event.id}/edit`}
+  className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-500 hover:text-blue-600 dark:border-slate-700 dark:text-slate-200"
+>
+  Edit Event
+</Link>
+
                     <Link
-                      href={`/events/${event.id}`}
+                      href={`/events/${event.id}?returnTo=/my-events`}
                       aria-label={`Open ${event.title}`}
                       className="rounded-xl border border-(--color-border) p-2.5 text-(--color-foreground) transition hover:border-(--color-primary)"
                     >
                       <ArrowUpRight size={18} />
                     </Link>
+
+                                        
                   </div>
                 </div>
               </article>

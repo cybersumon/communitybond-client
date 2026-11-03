@@ -5,27 +5,31 @@ import dns from "node:dns";
 import { MongoClient } from "mongodb";
 
 /**
- * MongoDB Atlas DNS configuration.
+ * MongoDB Connection for Better Auth
  *
  * PURPOSE:
- * Fix DNS SRV resolution issues on the
- * current Windows + Node.js environment.
+ * Configure DNS resolution before creating
+ * the MongoDB client.
  *
- * Must run before MongoClient connects.
+ * This workaround addresses the local Windows
+ * DNS SRV resolution issue.
  */
+
+// Configure reliable DNS servers.
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
+// Read MongoDB configuration.
 const mongoUri = process.env.MONGODB_URI;
-const databaseName = process.env.DB_NAME;
+const dbName = process.env.DB_NAME;
 
-if (!mongoUri || !databaseName) {
+if (!mongoUri || !dbName) {
   throw new Error(
-    "MONGODB_URI or DB_NAME is missing."
+    "MONGODB_URI or DB_NAME is missing"
   );
 }
 
-// Create the MongoDB connection client.
+// Create MongoDB client.
 export const mongoClient = new MongoClient(mongoUri);
 
-// Select the CommunityBond database.
-export const authDatabase = mongoClient.db(databaseName);
+// Select the database.
+export const authDatabase = mongoClient.db(dbName);

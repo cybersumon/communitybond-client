@@ -1,10 +1,12 @@
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { X } from "lucide-react";
 
 import { getEventById } from "@/lib/api/events";
 import EventDetailsContent from "@/components/events/details/EventDetailsContent";
+
+import { Suspense } from "react";
+import EventModalClose from "@/components/events/details/EventModalClose";
 
 /**
  * EventModalPage
@@ -53,14 +55,12 @@ export default async function EventModalPage({
         </div>
 
         {/* Close without triggering the old modal blink. */}
-        <Link
-          href="/upcoming-events"
-          scroll={false}
-          aria-label="Close event details"
-          className="absolute right-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/55 text-white backdrop-blur-md transition-colors hover:bg-black/75"
-        >
-          <X size={18} aria-hidden="true" />
-        </Link>
+        {/* Always-visible close button */}
+<div className="absolute right-4 top-4 z-100 sm:right-6 sm:top-6">
+  <Suspense fallback={null}>
+    <EventModalClose />
+  </Suspense>
+</div>
       </section>
     </div>
   );
