@@ -5,17 +5,7 @@ import { useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
 
-/**
- * Authentication Test Page
- *
- * PURPOSE:
- * Test Better Auth registration, login,
- * logout, and session functionality.
- *
- * NOTE:
- * This is a temporary development page.
- * We will build the final premium auth UI later.
- */
+
 export default function AuthTestPage() {
   const { data: session, isPending } =
     authClient.useSession();

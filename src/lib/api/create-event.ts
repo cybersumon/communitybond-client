@@ -1,16 +1,4 @@
 
-/**
- * Create Event API Client
- *
- * PURPOSE:
- * Submit a new event to the Express API.
- *
- * SECURITY:
- * - JWT is sent in the Authorization header.
- * - No JWT is stored in localStorage.
- * - Organizer ID is assigned by the backend.
- */
-
 // Form data sent to Express.js.
 export type CreateEventInput = {
   title: string;

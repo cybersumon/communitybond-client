@@ -1,11 +1,7 @@
 
 import type { NextConfig } from "next";
 
-/**
- * Next.js Configuration
- *
- * Allow optimized external images from Unsplash.
- */
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -16,6 +12,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  allowedDevOrigins: ["192.168.1.8"],
 };
 
 export default nextConfig;

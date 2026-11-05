@@ -1,31 +1,11 @@
 
 import type { FeatureItem } from "./featuresData";
 
-/**
- * FeatureCard Props
- *
- * WHY:
- * Each card receives one feature object
- * instead of maintaining its own hardcoded data.
- */
 type FeatureCardProps = {
   feature: FeatureItem;
   index: number;
 };
 
-/**
- * FeatureCard
- *
- * PURPOSE:
- * Display a feature's icon, title and description.
- *
- * HOW:
- * Destructure values from feature.
- * Render the supplied Lucide icon dynamically.
- *
- * ACCESSIBILITY:
- * Decorative icons are hidden from screen readers.
- */
 export default function FeatureCard({
   feature,
   index,

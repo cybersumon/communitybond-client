@@ -1,21 +1,9 @@
 
-/**
- * Props received by the EventDateBadge.
- */
+
 type EventDateBadgeProps = {
   date: string;
 };
 
-/**
- * EventDateBadge
- *
- * PURPOSE:
- * Show the event month and day in a compact badge.
- *
- * HOW:
- * Intl.DateTimeFormat formats the supplied ISO date.
- * Asia/Dhaka ensures consistent Bangladesh dates.
- */
 export default function EventDateBadge({
   date,
 }: EventDateBadgeProps) {

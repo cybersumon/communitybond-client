@@ -1,17 +1,9 @@
 
 import { getEvents, getRecentEvents } from "@/lib/api/events";
 
-/**
- * API Test Page
- *
- * PURPOSE:
- * Verify that Next.js can fetch real event
- * data from the Express.js backend.
- *
- * This is a temporary development page.
- */
+
 export default async function ApiTestPage() {
-  // Fetch data from the two Express endpoints.
+
   const [events, recentEvents] = await Promise.all([
     getEvents(),
     getRecentEvents(),
@@ -20,7 +12,7 @@ export default async function ApiTestPage() {
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-5 py-12">
 
-      {/* Page title. */}
+    
       <div className="mb-8">
         <p className="text-sm font-semibold text-(--color-primary)">
           CommunityBond Backend Integration
@@ -36,7 +28,7 @@ export default async function ApiTestPage() {
         </p>
       </div>
 
-      {/* Database statistics. */}
+   
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-(--color-border) p-6">
           <p className="text-sm text-(--color-muted)">
@@ -59,7 +51,7 @@ export default async function ApiTestPage() {
         </div>
       </div>
 
-      {/* Display real database events. */}
+  
       <section className="mt-10">
         <h2 className="mb-4 text-xl font-semibold text-(--color-foreground)">
           Events from MongoDB

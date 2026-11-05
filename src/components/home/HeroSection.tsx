@@ -2,22 +2,6 @@
 import HeroContent from "./hero/HeroContent";
 import HeroVisual from "./hero/HeroVisual";
 
-/**
- * HeroSection
- *
- * PURPOSE:
- * Combine the hero text and visual components.
- *
- * ARCHITECTURE:
- * HeroSection
- *   ├── HeroContent
- *   │     └── HeroActions
- *   └── HeroVisual
- *         └── HeroFloatingCard
- *
- * WHY:
- * Keep this file small and focused on layout only.
- */
 export default function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-(--color-hero)">

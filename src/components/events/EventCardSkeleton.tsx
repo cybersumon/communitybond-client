@@ -1,18 +1,4 @@
 
-/**
- * EventCardSkeleton
- *
- * PURPOSE:
- * Show placeholder shapes while event data is loading.
- *
- * WHY:
- * Skeletons reduce perceived waiting time and
- * prevent an empty page during API requests.
- *
- * NOTE:
- * We will connect this component to an actual
- * loading state when the backend API is implemented.
- */
 export default function EventCardSkeleton() {
   return (
     <div

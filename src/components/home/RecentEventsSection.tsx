@@ -9,25 +9,6 @@ import {
 
 import { getRecentEvents } from "@/lib/api/events";
 import EventGrid from "@/components/events/EventGrid";
-
-/**
- * RecentEventsSection
- *
- * PURPOSE:
- * Display the six most recently created
- * upcoming community events on the homepage.
- *
- * DATA SOURCE:
- * GET /api/events/recent
- *
- * SERVER COMPONENT:
- * Fetch events directly on the Next.js server.
- *
- * NAVIGATION:
- * returnTo="/" ensures closing an event modal
- * returns users to the homepage.
- */
-
 export default async function RecentEventsSection() {
   // Fetch the latest six upcoming events.
   const recentEvents = await getRecentEvents();
@@ -36,7 +17,7 @@ export default async function RecentEventsSection() {
     <section
       id="recent-events"
       aria-labelledby="recent-events-heading"
-      className="bg-(--color-background) py-16 sm:py-20 lg:py-24"
+      className="bg-(--color-background) py-16 sm:py-20 lg:py-10"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section heading. */}

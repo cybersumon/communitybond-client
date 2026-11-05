@@ -4,13 +4,7 @@ import { HeartHandshake, ShieldCheck, Users } from "lucide-react";
 
 import AuthForm from "@/components/auth/AuthForm";
 
-/**
- * Login Page
- *
- * PURPOSE:
- * Display the reusable sign-in form
- * inside a responsive premium layout.
- */
+
 
 export const metadata: Metadata = {
   title: "Login | CommunityBond",

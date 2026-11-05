@@ -13,29 +13,6 @@ import {
 import type { CommunityEvent } from "@/types/event";
 import EventGrid from "./EventGrid";
 
-/**
- * EventsExplorer
- *
- * PURPOSE:
- * Provide search and category filtering
- * for upcoming community events.
- *
- * FEATURES:
- * - Live search without page reload
- * - Dynamic categories from MongoDB events
- * - Filter by category
- * - Clear filters
- * - Responsive event cards
- *
- * DATA:
- * Events are already fetched by the
- * upcoming-events Server Component.
- *
- * NAVIGATION:
- * Details opened here should return to
- * /upcoming-events after closing the modal.
- */
-
 type EventsExplorerProps = {
   events: CommunityEvent[];
 };
@@ -43,9 +20,6 @@ type EventsExplorerProps = {
 export default function EventsExplorer({
   events,
 }: EventsExplorerProps) {
-  // -----------------------------------------
-  // STATE
-  // -----------------------------------------
 
   const [searchText, setSearchText] =
     useState("");
@@ -53,16 +27,6 @@ export default function EventsExplorer({
   const [selectedCategory, setSelectedCategory] =
     useState("all");
 
-  // -----------------------------------------
-  // DYNAMIC EVENT CATEGORIES
-  // -----------------------------------------
-
-  /**
-   * Build unique categories from events.
-   *
-   * New categories created by users will
-   * automatically appear in the filters.
-   */
   const categories = useMemo(() => {
     const uniqueCategories = new Set(
       events
@@ -75,17 +39,7 @@ export default function EventsExplorer({
     );
   }, [events]);
 
-  // -----------------------------------------
-  // FILTER EVENTS
-  // -----------------------------------------
 
-  /**
-   * Filter events by search and category.
-   *
-   * NOTE:
-   * The backend already returns upcoming
-   * events, so we do not filter dates again.
-   */
   const filteredEvents = useMemo(() => {
     const keyword = searchText
       .trim()
@@ -121,10 +75,6 @@ export default function EventsExplorer({
     selectedCategory,
   ]);
 
-  // -----------------------------------------
-  // CLEAR FILTERS
-  // -----------------------------------------
-
   const hasActiveFilters =
     searchText.trim().length > 0 ||
     selectedCategory !== "all";
@@ -133,10 +83,6 @@ export default function EventsExplorer({
     setSearchText("");
     setSelectedCategory("all");
   }
-
-  // -----------------------------------------
-  // UI
-  // -----------------------------------------
 
   return (
     <div className="space-y-8">

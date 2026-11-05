@@ -8,16 +8,7 @@ import {
 
 import type { LucideIcon } from "lucide-react";
 
-/**
- * FeatureItem Type
- *
- * PURPOSE:
- * Define the structure of a feature card.
- *
- * WHY:
- * TypeScript checks that each feature contains
- * an id, title, description and valid icon.
- */
+
 export type FeatureItem = {
   id: string;
   title: string;
@@ -25,13 +16,6 @@ export type FeatureItem = {
   icon: LucideIcon;
 };
 
-/**
- * Static homepage features.
- *
- * NOTE:
- * These describe platform capabilities.
- * Dynamic event data will come from MongoDB later.
- */
 export const features: FeatureItem[] = [
   {
     id: "discover",

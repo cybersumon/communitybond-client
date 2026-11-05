@@ -3,12 +3,6 @@
 import type { ReactNode } from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-/**
- * CommunityBond Theme Provider
- *
- * PURPOSE:
- * Support light, dark and system themes.
- */
 export default function ThemeProvider({
   children,
 }: {

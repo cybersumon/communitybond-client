@@ -10,17 +10,6 @@ import {
   authDatabase,
 } from "./auth-db";
 
-/**
- * CommunityBond Authentication
- *
- * FEATURES:
- * - Email/password registration
- * - Email/password login
- * - Google OAuth login
- * - MongoDB-backed sessions
- * - JWT support for Express.js API
- */
-
 // Validate Google OAuth credentials.
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;

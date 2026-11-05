@@ -1,20 +1,7 @@
 
 import { HeartHandshake } from "lucide-react";
 
-/**
- * JoinEventPanel
- *
- * PURPOSE:
- * Show the event participation call to action.
- *
- * CURRENT STATE:
- * The button is intentionally disabled until
- * Better Auth and the Join Event API are implemented.
- *
- * SECURITY:
- * Joining must eventually be verified on the server
- * and stored in MongoDB for the logged-in user.
- */
+
 export default function JoinEventPanel() {
   return (
     <section className="mt-8 rounded-2xl bg-(--color-hero) p-5">

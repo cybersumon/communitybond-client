@@ -1,16 +1,4 @@
 
-/**
-* HeroFloatingCard
-*
-* উদ্দেশ্য:
-* হিরো ইমেজের ওপর একটি উৎসাহব্যঞ্জক বার্তা প্রদর্শন করা। 
-*
-* পদ্ধতি:
-* এই কার্ডটি একটি রিলেটিভলি পজিশনড (relatively positioned) ইমেজ কন্টেইনারের ভেতরে অ্যাবসোলিউট পজিশনিং (absolute positioning) ব্যবহার করে। 
-*
-* দ্রষ্টব্য:
-* এটি একটি স্ট্যাটিক উপস্থাপনা, ডেটাবেস থেকে প্রাপ্ত কোনো তথ্য নয়। 
-*/
 export default function HeroFloatingCard() {
   return (
     <div className="absolute -bottom-5 left-4 z-10 max-w-62.5 rounded-2xl border border-(--color-border) bg-(--color-surface) p-4 shadow-xl sm:-left-6 sm:p-5">

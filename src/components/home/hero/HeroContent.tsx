@@ -1,18 +1,6 @@
 
 import HeroActions from "./HeroActions";
 
-/**
-* HeroContent
-*
-* উদ্দেশ্য:
-* মূল শিরোনাম এবং পরিচিতি প্রদর্শন করা। 
-*
-* উপাদানের সম্পর্ক:
-* HeroContent-এ CTA (কল-টু-অ্যাকশন) বাটনের জন্য HeroActions ইম্পোর্ট করা হয়। 
-*
-* কারণ:
-* টেক্সট এবং বাটন ২টা ছবি ও অন্যান্য ভাসমান ভিজ্যুয়াল উপাদান থেকে স্বতন্ত্র থাকে। 
-*/
 export default function HeroContent() {
   return (
     <div className="relative z-10 max-w-2xl">

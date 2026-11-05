@@ -1,27 +1,13 @@
 
 import { Search, X } from "lucide-react";
 
-/**
- * EventSearch Props
- *
- * value: Current search text.
- * onChange: Function to update search text.
- */
+
 type EventSearchProps = {
   value: string;
   onChange: (value: string) => void;
 };
 
-/**
- * EventSearch
- *
- * PURPOSE:
- * Allow users to search events by typing.
- *
- * HOW:
- * The input calls onChange whenever the user types.
- * The parent component controls the input value.
- */
+
 export default function EventSearch({
   value,
   onChange,

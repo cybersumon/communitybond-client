@@ -2,19 +2,6 @@
 import { getEvents } from "@/lib/api/events";
 import EventsExplorer from "@/components/events/EventsExplorer";
 
-/**
- * UpcomingEventsPage
- *
- * PURPOSE:
- * Fetch all upcoming events from our Express API
- * and pass them into the interactive event explorer.
- *
- * Server Component:
- * Fetch data from MongoDB through Express.
- *
- * Client Component:
- * Handle search and category filtering.
- */
 export default async function UpcomingEventsPage() {
   // Get real upcoming events from MongoDB.
   const events = await getEvents();

@@ -7,30 +7,11 @@ import type {
   ApiItemResponse,
 } from "@/types/api";
 
-/**
- * CommunityBond Events API
- *
- * PURPOSE:
- * Fetch event data from our Express.js backend.
- *
- * BACKEND:
- * http://localhost:5000
- *
- * WHY:
- * Keep API requests in one place instead of
- * repeating fetch() in every React component.
- */
 
 // Read the API address from .env.local.
 const API_BASE_URL =
   process.env.API_BASE_URL || "http://localhost:5000";
 
-/**
- * Reusable server-side API fetch function.
- *
- * cache: "no-store" means Next.js requests
- * current data instead of using its Data Cache.
- */
 async function fetchFromApi<T>(
   endpoint: string
 ): Promise<T> {
@@ -54,12 +35,6 @@ async function fetchFromApi<T>(
   return (await response.json()) as T;
 }
 
-/**
- * GET ALL UPCOMING EVENTS
- *
- * Express endpoint:
- * GET /api/events
- */
 export async function getEvents(): Promise<
   CommunityEvent[]
 > {
@@ -74,12 +49,7 @@ export async function getEvents(): Promise<
   return result.data;
 }
 
-/**
- * GET THE LATEST SIX EVENTS
- *
- * Express endpoint:
- * GET /api/events/recent
- */
+
 export async function getRecentEvents(): Promise<
   CommunityEvent[]
 > {
@@ -94,12 +64,7 @@ export async function getRecentEvents(): Promise<
   return result.data;
 }
 
-/**
- * GET SINGLE EVENT DETAILS
- *
- * Express endpoint:
- * GET /api/events/:id
- */
+
 export async function getEventById(
   id: string
 ): Promise<CommunityEvent | null> {

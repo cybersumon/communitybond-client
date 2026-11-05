@@ -4,15 +4,7 @@ import { HandHeart, Leaf, Users } from "lucide-react";
 
 import AuthForm from "@/components/auth/AuthForm";
 
-/**
- * Registration Page
- *
- * PURPOSE:
- * Provide a dedicated page for creating
- * a CommunityBond user account.
- *
- * Reuses AuthForm with mode="register".
- */
+
 
 export const metadata: Metadata = {
   title: "Register | CommunityBond",

@@ -5,17 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
 
-/**
- * EventModalClose
- *
- * PURPOSE:
- * Close event details and return users
- * to the page they opened the event from.
- *
- * SECURITY:
- * Allow only known internal return paths.
- * Do not allow external redirect URLs.
- */
+
 export default function EventModalClose() {
   const searchParams = useSearchParams();
 
@@ -26,6 +16,7 @@ export default function EventModalClose() {
     "/",
     "/upcoming-events",
     "/my-events",
+    "/my-joined-events",
   ];
 
   const closePath =

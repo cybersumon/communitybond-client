@@ -1,16 +1,6 @@
 
 import type { CommunityEvent } from "@/types/event";
 
-/**
- * My Events API
- *
- * PURPOSE:
- * Fetch events owned by the logged-in user.
- *
- * SECURITY:
- * The JWT identifies the current user.
- * The backend determines event ownership.
- */
 
 type MyEventsResponse = {
   success: boolean;

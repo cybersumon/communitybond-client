@@ -10,16 +10,7 @@ import {
 
 import CreateEventForm from "@/components/events/CreateEventForm";
 
-/**
- * Create Event Page
- *
- * PURPOSE:
- * Display the premium event creation form.
- *
- * AUTH:
- * The form checks the Better Auth session.
- * Express verifies JWT before saving.
- */
+
 
 export const metadata: Metadata = {
   title: "Create Event | CommunityBond",

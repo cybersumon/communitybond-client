@@ -3,12 +3,14 @@
 
 import {
   useEffect,
+  useRef,
   useState,
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   ArrowLeft,
@@ -33,31 +35,6 @@ import {
 
 import { uploadEventImage } from "@/lib/api/upload-image";
 
-/**
- * CreateEventForm
- *
- * PURPOSE:
- * Create a community event using the Express API.
- *
- * FEATURES:
- * - External image URL
- * - Local computer image upload
- * - Image preview
- * - Form validation
- * - JWT authentication
- * - MongoDB event creation
- * - Redirect after successful creation
- *
- * SECURITY:
- * - Organizer identity comes from verified JWT.
- * - User cannot submit a custom organizer ID.
- * - Image uploads require authentication.
- */
-
-// -------------------------------------------
-// TYPES
-// -------------------------------------------
-
 type ImageSource = "url" | "upload";
 
 type FormValues = {
@@ -69,10 +46,6 @@ type FormValues = {
   eventDate: string;
 };
 
-// -------------------------------------------
-// INITIAL FORM VALUES
-// -------------------------------------------
-
 const initialValues: FormValues = {
   title: "",
   description: "",
@@ -81,10 +54,6 @@ const initialValues: FormValues = {
   location: "",
   eventDate: "",
 };
-
-// -------------------------------------------
-// EVENT CATEGORIES
-// -------------------------------------------
 
 const categorySuggestions = [
   "Cleanup",
@@ -96,9 +65,13 @@ const categorySuggestions = [
   "Community Support",
 ];
 
-// -------------------------------------------
-// SHARED STYLES
-// -------------------------------------------
+const allowedImageTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
+
+const maxImageSize = 5 * 1024 * 1024;
 
 const inputClass =
   "w-full rounded-xl border border-(--color-border) " +
@@ -106,96 +79,108 @@ const inputClass =
   "text-(--color-foreground) outline-none transition " +
   "placeholder:text-(--color-muted) " +
   "focus:border-(--color-primary) " +
-  "focus:ring-2 focus:ring-(--color-primary)/15";
+  "focus:ring-2 focus:ring-emerald-500/15";
 
 const labelClass =
   "mb-2 block text-sm font-semibold text-(--color-foreground)";
 
-// -------------------------------------------
-// MAIN COMPONENT
-// -------------------------------------------
+function convertEventDate(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(
+      "Please select a valid event date and time."
+    );
+  }
+
+  if (date.getTime() <= Date.now()) {
+    throw new Error(
+      "Event date and time must be in the future."
+    );
+  }
+
+  return date.toISOString();
+}
+
+function getValidImageUrl(value: string): string {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  try {
+    const url = new URL(trimmed);
+
+    return url.protocol === "https:" ? trimmed : "";
+  } catch {
+    return "";
+  }
+}
 
 export default function CreateEventForm() {
   const router = useRouter();
 
-  /**
-   * Better Auth session.
-   */
   const {
     data: session,
     isPending: sessionLoading,
   } = authClient.useSession();
-
-  // -----------------------------------------
-  // FORM STATE
-  // -----------------------------------------
 
   const [form, setForm] = useState<FormValues>(
     initialValues
   );
 
   const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const [errorMessage, setErrorMessage] =
-    useState("");
-
-  const [successMessage, setSuccessMessage] =
-    useState("");
-
-  // -----------------------------------------
-  // IMAGE STATE
-  // -----------------------------------------
-
-  // URL or local computer upload.
   const [imageSource, setImageSource] =
     useState<ImageSource>("url");
 
-  // Selected computer image.
   const [selectedImage, setSelectedImage] =
     useState<File | null>(null);
 
-  // Temporary browser preview URL.
-  const [localPreview, setLocalPreview] =
-    useState("");
+  const [localPreview, setLocalPreview] = useState("");
+  const [imageFailed, setImageFailed] = useState(false);
 
-  // Image loading error state.
-  const [imageFailed, setImageFailed] =
-    useState(false);
+  const previewUrlsRef = useRef<Set<string>>(
+    new Set()
+  );
 
-  // -----------------------------------------
-  // IMAGE PREVIEW EFFECT
-  // -----------------------------------------
+  const submittingRef = useRef(false);
 
-  /**
-   * Create a temporary preview URL for
-   * the selected local image.
-   *
-   * Cleanup prevents browser memory leaks.
-   */
   useEffect(() => {
-    if (!selectedImage) {
+    const previewUrls = previewUrlsRef.current;
+
+    return () => {
+      for (const url of previewUrls) {
+        URL.revokeObjectURL(url);
+      }
+
+      previewUrls.clear();
+    };
+  }, []);
+
+  function replaceLocalPreview(file: File | null) {
+    const previewUrls = previewUrlsRef.current;
+
+    for (const url of previewUrls) {
+      URL.revokeObjectURL(url);
+    }
+
+    previewUrls.clear();
+
+    if (!file) {
+      setLocalPreview("");
       return;
     }
 
-    const previewUrl =
-      URL.createObjectURL(selectedImage);
+    const previewUrl = URL.createObjectURL(file);
 
+    previewUrls.add(previewUrl);
     setLocalPreview(previewUrl);
-    setImageFailed(false);
+  }
 
-    return () => {
-      URL.revokeObjectURL(previewUrl);
-      setLocalPreview("");
-    };
-  }, [selectedImage]);
-
-  // -----------------------------------------
-  // UPDATE FORM FIELDS
-  // -----------------------------------------
-
-  /**
-   * Update a form value without page reload.
-   */
   function updateField(
     field: keyof FormValues,
     value: string
@@ -206,49 +191,41 @@ export default function CreateEventForm() {
     }));
 
     setErrorMessage("");
+    setSuccessMessage("");
 
     if (field === "thumbnailUrl") {
       setImageFailed(false);
     }
   }
 
-  // -----------------------------------------
-  // HANDLE IMAGE SOURCE CHANGE
-  // -----------------------------------------
-
   function changeImageSource(source: ImageSource) {
-    if (submitting) return;
+    if (submittingRef.current) {
+      return;
+    }
 
     setImageSource(source);
     setImageFailed(false);
     setErrorMessage("");
+    setSuccessMessage("");
   }
 
-  // -----------------------------------------
-  // HANDLE LOCAL IMAGE SELECTION
-  // -----------------------------------------
-
-  /**
-   * Accept only JPG, PNG or WebP files
-   * with a maximum size of 5 MB.
-   *
-   * Server validates the file again.
-   */
   function handleImageSelection(
     event: ChangeEvent<HTMLInputElement>
   ) {
+    if (submittingRef.current) {
+      return;
+    }
+
     const file = event.target.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedImageTypes.includes(file.type)) {
       setSelectedImage(null);
+      replaceLocalPreview(null);
+      setImageFailed(false);
       setErrorMessage(
         "Only JPG, PNG and WebP images are allowed."
       );
@@ -256,10 +233,10 @@ export default function CreateEventForm() {
       return;
     }
 
-    const maxFileSize = 5 * 1024 * 1024;
-
-    if (file.size > maxFileSize) {
+    if (file.size > maxImageSize) {
       setSelectedImage(null);
+      replaceLocalPreview(null);
+      setImageFailed(false);
       setErrorMessage(
         "Image size must be less than 5 MB."
       );
@@ -268,48 +245,13 @@ export default function CreateEventForm() {
     }
 
     setSelectedImage(file);
+    replaceLocalPreview(file);
     setImageFailed(false);
     setErrorMessage("");
+    setSuccessMessage("");
   }
 
-  // -----------------------------------------
-  // VALIDATE EVENT DATE
-  // -----------------------------------------
-
-  /**
-   * Convert HTML datetime-local into
-   * an ISO date accepted by Express.
-   *
-   * Browser local time is converted to UTC.
-   */
-  function convertEventDate(value: string): string {
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      throw new Error(
-        "Please select a valid event date and time."
-      );
-    }
-
-    if (date.getTime() <= Date.now()) {
-      throw new Error(
-        "Event date and time must be in the future."
-      );
-    }
-
-    return date.toISOString();
-  }
-
-  // -----------------------------------------
-  // VALIDATE FORM
-  // -----------------------------------------
-
-  /**
-   * Client-side validation for better UX.
-   *
-   * Express Zod validation is authoritative.
-   */
-  function validateForm() {
+  function validateForm(): string {
     const title = form.title.trim();
     const description = form.description.trim();
     const eventType = form.eventType.trim();
@@ -349,75 +291,46 @@ export default function CreateEventForm() {
       );
     }
 
-    /**
-     * Validate image based on selected source.
-     */
     if (imageSource === "url") {
-      try {
-        const url = new URL(thumbnailUrl);
-
-        if (url.protocol !== "https:") {
-          throw new Error("Invalid protocol");
-        }
-      } catch {
+      if (!getValidImageUrl(thumbnailUrl)) {
         throw new Error(
           "Please enter a valid HTTPS image URL."
         );
       }
-    } else {
-      if (!selectedImage) {
-        throw new Error(
-          "Please select an image from your computer."
-        );
-      }
+    } else if (!selectedImage) {
+      throw new Error(
+        "Please select an image from your computer."
+      );
     }
 
-    // Validate future event date.
-    convertEventDate(form.eventDate);
+    return convertEventDate(form.eventDate);
   }
 
-  // -----------------------------------------
-  // SUBMIT EVENT
-  // -----------------------------------------
-
-  /**
-   * Submit workflow:
-   *
-   * 1. Check user session.
-   * 2. Validate form.
-   * 3. Request JWT.
-   * 4. Upload image when necessary.
-   * 5. Submit event to Express.
-   * 6. Redirect to event details.
-   */
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (submitting) return;
+    if (submittingRef.current) {
+      return;
+    }
 
     setErrorMessage("");
     setSuccessMessage("");
 
     try {
-      // Authentication required.
       if (!session?.user) {
         throw new Error(
           "Please sign in before creating an event."
         );
       }
 
-      // Validate user input.
-      validateForm();
+      const eventDate = validateForm();
 
+      submittingRef.current = true;
       setSubmitting(true);
 
-      // Get JWT from Better Auth.
-      const {
-        data,
-        error,
-      } = await authClient.token();
+      const { data, error } = await authClient.token();
 
       if (error || !data?.token) {
         throw new Error(
@@ -425,66 +338,40 @@ export default function CreateEventForm() {
         );
       }
 
-      /**
-       * Resolve the final image URL.
-       *
-       * URL mode:
-       *   Use user's external image URL.
-       *
-       * Upload mode:
-       *   Upload file to Express first.
-       *   Use the returned public image URL.
-       */
-      let finalThumbnailUrl =
-        form.thumbnailUrl.trim();
+      const token = data.token;
+
+      let finalThumbnailUrl = form.thumbnailUrl.trim();
 
       if (imageSource === "upload") {
         if (!selectedImage) {
-          throw new Error(
-            "Please select an image."
-          );
+          throw new Error("Please select an image.");
         }
 
-        finalThumbnailUrl =
-          await uploadEventImage(
-            selectedImage,
-            data.token
-          );
+        finalThumbnailUrl = await uploadEventImage(
+          selectedImage,
+          token
+        );
       }
 
-      /**
-       * Build event payload.
-       *
-       * Never send organizer ID or createdAt.
-       * Express creates those fields.
-       */
       const payload: CreateEventInput = {
         title: form.title.trim(),
         description: form.description.trim(),
         eventType: form.eventType.trim(),
         thumbnailUrl: finalThumbnailUrl,
         location: form.location.trim(),
-        eventDate: convertEventDate(
-          form.eventDate
-        ),
+        eventDate,
       };
 
-      // Send event data to Express API.
-      const createdEvent =
-        await createCommunityEvent(
-          payload,
-          data.token
-        );
+      const createdEvent = await createCommunityEvent(
+        payload,
+        token
+      );
 
       setSuccessMessage(
         "Event created successfully!"
       );
 
-      // Navigate to created event details.
-      router.push(
-        `/events/${createdEvent.id}`
-      );
-
+      router.push(`/events/${createdEvent.id}`);
       router.refresh();
     } catch (error) {
       setErrorMessage(
@@ -493,13 +380,22 @@ export default function CreateEventForm() {
           : "Something went wrong."
       );
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
 
-  // -----------------------------------------
-  // CHECK SESSION
-  // -----------------------------------------
+  const externalImageUrl = getValidImageUrl(
+    form.thumbnailUrl
+  );
+
+  const imagePreviewUrl =
+    imageSource === "upload"
+      ? localPreview
+      : externalImageUrl;
+
+  const showImagePreview =
+    Boolean(imagePreviewUrl) && !imageFailed;
 
   if (sessionLoading) {
     return (
@@ -510,22 +406,21 @@ export default function CreateEventForm() {
         <LoaderCircle
           size={20}
           className="animate-spin"
+          aria-hidden="true"
         />
-
         Checking your session...
       </div>
     );
   }
 
-  // -----------------------------------------
-  // NOT AUTHENTICATED
-  // -----------------------------------------
-
   if (!session?.user) {
     return (
       <div className="mx-auto max-w-lg rounded-3xl border border-(--color-border) bg-(--color-surface) p-8 text-center shadow-sm">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-(--color-primary)/10 text-(--color-primary)">
-          <ShieldCheck size={26} />
+          <ShieldCheck
+            size={26}
+            aria-hidden="true"
+          />
         </div>
 
         <h2 className="text-2xl font-bold text-(--color-foreground)">
@@ -539,7 +434,7 @@ export default function CreateEventForm() {
 
         <Link
           href="/login"
-          className="mt-6 inline-flex items-center justify-center rounded-xl bg-(--color-primary) px-6 py-3 text-sm font-bold text-white"
+          className="mt-6 inline-flex items-center justify-center rounded-xl bg-(--color-primary) px-6 py-3 text-sm font-bold text-white transition hover:opacity-90"
         >
           Sign in
         </Link>
@@ -547,48 +442,18 @@ export default function CreateEventForm() {
     );
   }
 
-  // -----------------------------------------
-  // IMAGE PREVIEW SOURCE
-  // -----------------------------------------
-
-  const externalImageUrl =
-    form.thumbnailUrl.trim();
-
-  let validExternalUrl = false;
-
-  try {
-    validExternalUrl =
-      new URL(externalImageUrl).protocol ===
-      "https:";
-  } catch {
-    validExternalUrl = false;
-  }
-
-  const imagePreviewUrl =
-    imageSource === "upload"
-      ? localPreview
-      : validExternalUrl
-        ? externalImageUrl
-        : "";
-
-  const showImagePreview =
-    Boolean(imagePreviewUrl) &&
-    !imageFailed;
-
-  // -----------------------------------------
-  // FORM UI
-  // -----------------------------------------
-
   return (
     <form
       onSubmit={handleSubmit}
       className="space-y-7"
     >
-      {/* Section heading. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-(--color-primary)">
-            <Sparkles size={15} />
+            <Sparkles
+              size={15}
+              aria-hidden="true"
+            />
             Community Initiative
           </p>
 
@@ -602,12 +467,14 @@ export default function CreateEventForm() {
         </div>
 
         <span className="inline-flex items-center gap-2 rounded-full border border-(--color-border) px-3 py-1.5 text-xs text-(--color-muted)">
-          <ShieldCheck size={14} />
+          <ShieldCheck
+            size={14}
+            aria-hidden="true"
+          />
           Verified organizer
         </span>
       </div>
 
-      {/* Event Title. */}
       <div>
         <label
           htmlFor="event-title"
@@ -625,10 +492,7 @@ export default function CreateEventForm() {
           disabled={submitting}
           value={form.title}
           onChange={(event) =>
-            updateField(
-              "title",
-              event.target.value
-            )
+            updateField("title", event.target.value)
           }
           placeholder="e.g. Winter Clothes Distribution"
           className={inputClass}
@@ -639,7 +503,6 @@ export default function CreateEventForm() {
         </p>
       </div>
 
-      {/* Event Description. */}
       <div>
         <label
           htmlFor="event-description"
@@ -671,7 +534,6 @@ export default function CreateEventForm() {
         </p>
       </div>
 
-      {/* Category and Location. */}
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label
@@ -701,14 +563,12 @@ export default function CreateEventForm() {
           />
 
           <datalist id="event-category-suggestions">
-            {categorySuggestions.map(
-              (category) => (
-                <option
-                  key={category}
-                  value={category}
-                />
-              )
-            )}
+            {categorySuggestions.map((category) => (
+              <option
+                key={category}
+                value={category}
+              />
+            ))}
           </datalist>
         </div>
 
@@ -724,7 +584,7 @@ export default function CreateEventForm() {
             <MapPin
               size={18}
               aria-hidden="true"
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-(--color-muted)"
+              className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-(--color-muted)"
             />
 
             <input
@@ -748,14 +608,16 @@ export default function CreateEventForm() {
         </div>
       </div>
 
-      {/* Event Date and Time. */}
       <div>
         <label
           htmlFor="event-date"
           className={labelClass}
         >
           <span className="inline-flex items-center gap-2">
-            <CalendarDays size={17} />
+            <CalendarDays
+              size={17}
+              aria-hidden="true"
+            />
             Event Date & Time *
           </span>
         </label>
@@ -776,54 +638,57 @@ export default function CreateEventForm() {
         />
 
         <p className="mt-2 flex items-center gap-2 text-xs text-(--color-muted)">
-          <Clock3 size={14} />
+          <Clock3
+            size={14}
+            aria-hidden="true"
+          />
           Event time uses your local timezone.
         </p>
       </div>
 
-      {/* Image Source Selection. */}
       <div className="space-y-4">
         <label className={labelClass}>
           Event Cover Image *
         </label>
 
         <div className="grid grid-cols-2 gap-3">
-          {/* External URL option. */}
           <button
             type="button"
             disabled={submitting}
-            onClick={() =>
-              changeImageSource("url")
-            }
+            onClick={() => changeImageSource("url")}
+            aria-pressed={imageSource === "url"}
             className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
               imageSource === "url"
                 ? "border-(--color-primary) bg-(--color-primary)/10 text-(--color-primary)"
                 : "border-(--color-border) text-(--color-foreground)"
             }`}
           >
-            <Link2 size={17} />
+            <Link2
+              size={17}
+              aria-hidden="true"
+            />
             Image URL
           </button>
 
-          {/* Computer upload option. */}
           <button
             type="button"
             disabled={submitting}
-            onClick={() =>
-              changeImageSource("upload")
-            }
+            onClick={() => changeImageSource("upload")}
+            aria-pressed={imageSource === "upload"}
             className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
               imageSource === "upload"
                 ? "border-(--color-primary) bg-(--color-primary)/10 text-(--color-primary)"
                 : "border-(--color-border) text-(--color-foreground)"
             }`}
           >
-            <UploadCloud size={17} />
+            <UploadCloud
+              size={17}
+              aria-hidden="true"
+            />
             Upload Image
           </button>
         </div>
 
-        {/* Image URL input. */}
         {imageSource === "url" ? (
           <div>
             <label
@@ -855,11 +720,11 @@ export default function CreateEventForm() {
             </p>
           </div>
         ) : (
-          /* Local computer upload input. */
           <div className="rounded-2xl border border-dashed border-(--color-border) bg-(--color-background) p-6 text-center">
             <UploadCloud
               size={32}
               className="mx-auto text-(--color-primary)"
+              aria-hidden="true"
             />
 
             <label
@@ -890,24 +755,24 @@ export default function CreateEventForm() {
           </div>
         )}
 
-        {/* Live Image Preview. */}
         <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl border border-(--color-border) bg-(--color-background)">
           {showImagePreview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               key={imagePreviewUrl}
               src={imagePreviewUrl}
               alt="Event cover preview"
-              onError={() =>
-                setImageFailed(true)
-              }
-              className="h-full w-full object-cover"
+              fill
+              unoptimized
+              sizes="(max-width: 640px) 100vw, 800px"
+              onError={() => setImageFailed(true)}
+              className="object-cover"
             />
           ) : (
             <div className="flex flex-col items-center gap-2 p-6 text-center">
               <ImagePlus
                 size={34}
                 className="text-(--color-muted)"
+                aria-hidden="true"
               />
 
               <p className="text-sm font-semibold text-(--color-foreground)">
@@ -917,23 +782,24 @@ export default function CreateEventForm() {
               </p>
 
               <p className="text-xs text-(--color-muted)">
-                {imageSource === "upload"
-                  ? "Choose an image from your computer."
-                  : "Enter a direct HTTPS image URL."}
+                {imageFailed
+                  ? "Please choose another image."
+                  : imageSource === "upload"
+                    ? "Choose an image from your computer."
+                    : "Enter a direct HTTPS image URL."}
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Organizer Information. */}
       <div className="rounded-2xl border border-(--color-border) bg-(--color-background) p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-(--color-muted)">
           Event Organizer
         </p>
 
         <p className="mt-2 text-sm font-bold text-(--color-foreground)">
-          {session.user.name}
+          {session.user.name || session.user.email}
         </p>
 
         <p className="mt-1 text-xs text-(--color-muted)">
@@ -941,7 +807,6 @@ export default function CreateEventForm() {
         </p>
       </div>
 
-      {/* Error Message. */}
       {errorMessage && (
         <div
           role="alert"
@@ -951,24 +816,28 @@ export default function CreateEventForm() {
         </div>
       )}
 
-      {/* Success Message. */}
       {successMessage && (
         <p
           role="status"
           className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400"
         >
-          <CheckCircle2 size={18} />
+          <CheckCircle2
+            size={18}
+            aria-hidden="true"
+          />
           {successMessage}
         </p>
       )}
 
-      {/* Form Actions. */}
       <div className="flex flex-col-reverse gap-3 border-t border-(--color-border) pt-6 sm:flex-row sm:justify-end">
         <Link
           href="/upcoming-events"
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-(--color-border) px-6 py-3 text-sm font-semibold text-(--color-foreground) transition hover:bg-(--color-background)"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft
+            size={16}
+            aria-hidden="true"
+          />
           Cancel
         </Link>
 
@@ -982,12 +851,16 @@ export default function CreateEventForm() {
               <LoaderCircle
                 size={18}
                 className="animate-spin"
+                aria-hidden="true"
               />
               Creating Event...
             </>
           ) : (
             <>
-              <CalendarDays size={18} />
+              <CalendarDays
+                size={18}
+                aria-hidden="true"
+              />
               Create Event
             </>
           )}

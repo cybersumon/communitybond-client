@@ -1,24 +1,7 @@
 
 import { CheckCircle2, ClipboardList } from "lucide-react";
 
-/**
- * VolunteerGuidelines
- *
- * PURPOSE:
- * Display preparation guidelines for event volunteers.
- *
- * WHY:
- * Users should understand basic participation
- * instructions before joining an event.
- *
- * HOW:
- * A static array stores each guideline.
- * Array.map() renders the guidelines as list items.
- *
- * FUTURE:
- * We can allow organizers to provide their own
- * guidelines when the event creation API is ready.
- */
+
 
 // General guidelines for community volunteering.
 const guidelines = [
@@ -27,12 +10,7 @@ const guidelines = [
   "Follow the event organizer's instructions.",
 ];
 
-/**
- * Reusable VolunteerGuidelines component.
- *
- * No client state is needed, so this remains
- * a React Server Component.
- */
+
 export default function VolunteerGuidelines() {
   return (
     <section

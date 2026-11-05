@@ -5,24 +5,6 @@ import { CalendarSearch, PlusCircle } from "lucide-react";
 import type { CommunityEvent } from "@/types/event";
 import EventCard from "./EventCard";
 
-/**
- * EventGrid
- *
- * PURPOSE:
- * Display a responsive collection of EventCards.
- *
- * FEATURES:
- * - Mobile: 1 column
- * - Tablet: 2 columns
- * - Desktop: 3 columns
- * - Empty state
- * - Return navigation support
- *
- * NAVIGATION:
- * Pass returnTo to every EventCard so the
- * event details modal knows where to return.
- */
-
 export type EventReturnPath =
   | "/"
   | "/upcoming-events"
@@ -43,9 +25,7 @@ export default function EventGrid({
   emptyDescription = "There are no events matching your selection.",
   showCreateButton = false,
 }: EventGridProps) {
-  /**
-   * Empty state when there are no events.
-   */
+  
   if (events.length === 0) {
     return (
       <div className="rounded-3xl border border-(--color-border) bg-(--color-surface) px-6 py-16 text-center shadow-sm">
@@ -80,9 +60,6 @@ export default function EventGrid({
     );
   }
 
-  /**
-   * Render event cards.
-   */
   return (
     <div className="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3">
       {events.map((event) => (

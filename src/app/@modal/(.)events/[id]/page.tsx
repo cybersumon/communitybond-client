@@ -1,6 +1,6 @@
 
 import { notFound } from "next/navigation";
-import { X } from "lucide-react";
+
 
 import { getEventById } from "@/lib/api/events";
 import EventDetailsContent from "@/components/events/details/EventDetailsContent";
@@ -8,21 +8,7 @@ import EventDetailsContent from "@/components/events/details/EventDetailsContent
 import { Suspense } from "react";
 import EventModalClose from "@/components/events/details/EventModalClose";
 
-/**
- * EventModalPage
- *
- * PURPOSE:
- * Show real MongoDB event details inside the
- * existing Next.js intercepted modal route.
- *
- * DATA FLOW:
- * Event ID -> Express API -> MongoDB
- * -> EventDetailsContent
- *
- * IMPORTANT:
- * Preserve the stable fixed-overlay approach.
- * No router.back(), useEffect(), or dialog.showModal().
- */
+
 export default async function EventModalPage({
   params,
 }: {

@@ -1,19 +1,6 @@
 
 import Link from "next/link";
 
-/**
- * HeroActions
- *
- * PURPOSE:
- * Display the primary and secondary action buttons.
- *
- * WHY:
- * Separating actions makes them easier to reuse
- * and update without modifying the hero layout.
- *
- * HOW:
- * Next.js Link handles internal page navigation.
- */
 export default function HeroActions() {
   return (
     <div className="mt-9 flex flex-wrap gap-4">

@@ -1,14 +1,4 @@
 
-/**
- * SectionHeading Component
- *
- * PURPOSE:
- * Display consistent headings across website sections.
- *
- * HOW:
- * Parent components pass the title, label
- * and description through React props.
- */
 
 type SectionHeadingProps = {
   label?: string;

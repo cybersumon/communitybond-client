@@ -1,43 +1,31 @@
+
+import Image from "next/image";
 import Link from "next/link";
 
-/**
- * Logo Component
- *
- * WHY:
- * Display a consistent brand identity in the website.
- *
- * HOW:
- * Next.js Link allows navigation to the homepage
- * without unnecessary full-page browser reloads.
- *
- * REUSABILITY:
- * The same Logo can be used in Navbar and Footer.
- */
 export default function Logo() {
   return (
     <Link
       href="/"
       aria-label="CommunityBond Home"
-      className="inline-flex items-center gap-3"
+      className="relative inline-block w-48 shrink-0 sm:w-52 lg:w-56"
     >
-      {/* Simple brand icon using text for our first lesson. */}
-      <span
-        aria-hidden="true"
-        className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#176B50] text-xl font-bold text-white"
-      >
-        C
-      </span>
+      {/* Brand Logo */}
+      <Image
+  key="communitybond-logo-v2"
+  src="/images/communitybond-logo.png?v=2"
+  alt="CommunityBond"
+  width={300}
+  height={100}
+  priority
+  unoptimized
+  className="block h-auto w-full object-contain"
+/>
 
-      {/* Website name and tagline. */}
-      <span className="flex flex-col">
-        <span className="text-xl font-bold tracking-tight">
-          CommunityBond
-        </span>
-
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-(--color-primary)">
-  Together for Good
-</span>
+      {/* Tagline under the wordmark */}
+      <span className="absolute top-[65%] right-[6%] left-[18%] block text-center text-[9px] font-bold uppercase tracking-[0.12em] whitespace-nowrap text-(--color-primary) sm:text-[10px]">
+        Together We Care
       </span>
     </Link>
   );
 }
+

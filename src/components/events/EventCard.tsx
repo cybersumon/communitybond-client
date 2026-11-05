@@ -13,32 +13,11 @@ import type { CommunityEvent } from "@/types/event";
 import EventDateBadge from "./EventDateBadge";
 import EventOrganizer from "./EventOrganizer";
 
-
-/**
- * EventCard Props
- *
- * Receives a complete event object.
- */
 type EventCardProps = {
   event: CommunityEvent;
   returnTo?: "/" | "/upcoming-events" | "/my-events";
 };
 
-/**
- * EventCard
- *
- * PURPOSE:
- * Display a modern preview of a community event.
- *
- * COMPONENT TREE:
- * EventCard
- *   ├── EventDateBadge
- *   └── EventOrganizer
- *
- * HOW:
- * The event object supplies all display data.
- * The View Event link opens the public detail page.
- */
 export default function EventCard({
   event,
   returnTo = "/upcoming-events",

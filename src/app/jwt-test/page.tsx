@@ -7,20 +7,6 @@ import { ShieldCheck, LoaderCircle } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 
-/**
- * JWT Integration Test Page
- *
- * PURPOSE:
- * Verify communication between Better Auth
- * and our protected Express API.
- *
- * SECURITY:
- * - Do not display JWT tokens.
- * - Do not store JWT tokens in localStorage.
- * - Request a fresh token for each test.
- *
- * This is a temporary development page.
- */
 export default function JwtTestPage() {
   const { data: session, isPending } =
     authClient.useSession();
@@ -35,7 +21,7 @@ export default function JwtTestPage() {
     setVerifiedUserId("");
 
     try {
-      // Get a signed JWT from Better Auth.
+    
       const { data, error } = await authClient.token();
 
       if (error || !data?.token) {
@@ -43,7 +29,7 @@ export default function JwtTestPage() {
         return;
       }
 
-      // Pass the token to Express in the Authorization header.
+   
       const response = await fetch(
         "http://localhost:5000/api/auth-test/me",
         {
@@ -70,7 +56,7 @@ export default function JwtTestPage() {
         return;
       }
 
-      // Display verification result, never the JWT itself.
+  
       setVerifiedUserId(result.user?.id || "");
       setMessage("Express JWT verification successful!");
     } catch {

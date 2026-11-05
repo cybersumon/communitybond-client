@@ -1,30 +1,11 @@
 
 import type { EventOrganizer as OrganizerType } from "@/types/event";
 
-/**
- * EventOrganizer Props
- *
- * Receives the organizer information
- * from the parent EventCard component.
- */
+
 type EventOrganizerProps = {
   organizer: OrganizerType;
 };
 
-/**
- * EventOrganizer Component
- *
- * PURPOSE:
- * Display the name and avatar of the event creator.
- *
- * HOW:
- * Uses the first letter of the organizer's name
- * when a verified profile image is not available.
- *
- * WHY:
- * Keeping organizer UI separate makes it reusable
- * across EventCard and EventDetails.
- */
 export default function EventOrganizer({
   organizer,
 }: EventOrganizerProps) {

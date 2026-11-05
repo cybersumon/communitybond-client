@@ -8,15 +8,6 @@ import { usePathname } from "next/navigation";
 import { navigationLinks } from "./NavLinks";
 import AuthNav from "../shared/AuthNav";
 
-/**
- * MobileMenu Component
- *
- * PURPOSE:
- * Provide an interactive menu on smaller screens.
- *
- * WHY "use client":
- * React state and click events require a Client Component.
- */
 export default function MobileMenu() {
   // Controls whether the mobile menu is visible.
   const [isOpen, setIsOpen] = useState(false);
@@ -66,15 +57,6 @@ export default function MobileMenu() {
                 {item.label}
               </Link>
             ))}
-
-            {/* Authentication will become dynamic later. */}
-            {/* <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-              className="mt-2 rounded-xl bg-[#176B50] px-4 py-3 text-center text-sm font-semibold text-white"
-            >
-              Login
-            </Link> */}
             <AuthNav />
           </div>
         </nav>

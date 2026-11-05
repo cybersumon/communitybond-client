@@ -8,17 +8,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { updateEventApi } from "@/lib/api/update-event";
 
-/**
- * Edit Event Form
- *
- * PURPOSE:
- * Allow event organizers to update their events.
- *
- * SECURITY:
- * - Requires a logged-in session.
- * - Uses Better Auth JWT.
- * - Backend verifies event ownership.
- */
+
 
 type EditableEvent = {
   id: string;
@@ -43,18 +33,24 @@ type FormValues = {
   eventDate: string;
 };
 
+type LoadState = {
+  eventId: string;
+  userId: string;
+  status: "success" | "error";
+  message: string;
+};
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "http://localhost:5001";
 
-/**
- * Convert an ISO datetime to a datetime-local value.
- *
- * datetime-local uses the browser's local time,
- * while the API uses ISO datetimes.
- */
-function toLocalDateTime(isoDate: string) {
+
+function toLocalDateTime(isoDate: string): string {
   const date = new Date(isoDate);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
 
   const local = new Date(
     date.getTime() - date.getTimezoneOffset() * 60000
@@ -63,6 +59,42 @@ function toLocalDateTime(isoDate: string) {
   return local.toISOString().slice(0, 16);
 }
 
+
+const initialForm: FormValues = {
+  title: "",
+  description: "",
+  eventType: "",
+  thumbnailUrl: "",
+  location: "",
+  eventDate: "",
+};
+
+
+const inputClass =
+  "w-full rounded-xl border border-(--color-border) bg-(--color-background) px-4 py-3 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-primary) focus:ring-2 focus:ring-emerald-500/10";
+
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="block text-sm font-semibold text-(--color-foreground)">
+        {label}
+      </span>
+
+      {children}
+    </label>
+  );
+}
+
+/**
+ * Main Edit Event Component.
+ */
 export default function EditEventForm({
   eventId,
 }: {
@@ -70,95 +102,138 @@ export default function EditEventForm({
 }) {
   const router = useRouter();
 
-  const { data: session, isPending: sessionPending } =
-    authClient.useSession();
+  /**
+   * Better Auth session information.
+   */
+  const {
+    data: session,
+    isPending: sessionPending,
+  } = authClient.useSession();
 
-  const [form, setForm] = useState<FormValues>({
-    title: "",
-    description: "",
-    eventType: "",
-    thumbnailUrl: "",
-    location: "",
-    eventDate: "",
-  });
+  
+  const userId = session?.user?.id;
 
-  const [loading, setLoading] = useState(true);
+  /**
+   * Form states.
+   */
+  const [form, setForm] = useState<FormValues>(
+    initialForm
+  );
+
+  const [loadState, setLoadState] =
+    useState<LoadState | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Load the event after authentication is ready.
+ 
   useEffect(() => {
-    if (sessionPending) return;
-
-    if (!session?.user) {
-      setError("Please log in to edit this event.");
-      setLoading(false);
+    if (sessionPending || !userId) {
       return;
     }
+
+   
+    const authenticatedUserId: string = userId;
 
     const controller = new AbortController();
 
     async function loadEvent() {
       try {
-        setLoading(true);
-        setError("");
-
+        /**
+         * Load the existing event.
+         */
         const response = await fetch(
           `${API_BASE_URL}/api/events/${eventId}`,
           {
+            method: "GET",
             cache: "no-store",
             signal: controller.signal,
           }
         );
 
         if (!response.ok) {
-          throw new Error("Unable to load event.");
+          throw new Error(
+            "Unable to load event information."
+          );
         }
 
         const result = await response.json();
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
         const event = result.data as EditableEvent;
 
-        // Frontend ownership check for user experience.
-        // The backend performs the authoritative check.
-        if (event.organizer.id !== session!.user.id) {
+        if (!event || !event.organizer) {
+          throw new Error(
+            "Invalid event information received."
+          );
+        }
+
+        
+        if (
+          event.organizer.id !== authenticatedUserId
+        ) {
           throw new Error(
             "You are not allowed to edit this event."
           );
         }
 
-        if (controller.signal.aborted) return;
-
+        /**
+         * Populate the form.
+         */
         setForm({
           title: event.title,
           description: event.description,
           eventType: event.eventType,
           thumbnailUrl: event.thumbnailUrl,
           location: event.location,
-          eventDate: toLocalDateTime(event.eventDate),
+          eventDate: toLocalDateTime(
+            event.eventDate
+          ),
+        });
+
+        /**
+         * Mark this event as successfully loaded.
+         */
+        setLoadState({
+          eventId,
+          userId: authenticatedUserId,
+          status: "success",
+          message: "",
         });
       } catch (err) {
-        if (controller.signal.aborted) return;
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load event."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
+        if (controller.signal.aborted) {
+          return;
         }
+
+        setLoadState({
+          eventId,
+          userId: authenticatedUserId,
+          status: "error",
+          message:
+            err instanceof Error
+              ? err.message
+              : "Failed to load event.",
+        });
       }
     }
 
     void loadEvent();
 
-    return () => controller.abort();
-  }, [eventId, session?.user?.id, sessionPending]);
+    /**
+     * Cancel previous requests when the event
+     * or authenticated user changes.
+     */
+    return () => {
+      controller.abort();
+    };
+  }, [eventId, userId, sessionPending]);
 
   /**
-   * Update a field without reloading the page.
+   * Update individual form fields.
    */
   function updateField(
     field: keyof FormValues,
@@ -174,21 +249,27 @@ export default function EditEventForm({
   }
 
   /**
-   * Submit changes using the verified JWT.
+   * Submit the updated event.
    */
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (saving) return;
+    if (saving || !userId) {
+      return;
+    }
 
     setSaving(true);
     setError("");
     setSuccess("");
 
     try {
+      /**
+       * Retrieve JWT token from Better Auth.
+       */
       const tokenResponse = await authClient.token();
+
       const token = tokenResponse.data?.token;
 
       if (!token) {
@@ -197,6 +278,20 @@ export default function EditEventForm({
         );
       }
 
+      /**
+       * Validate event date.
+       */
+      const parsedDate = new Date(form.eventDate);
+
+      if (Number.isNaN(parsedDate.getTime())) {
+        throw new Error(
+          "Please enter a valid event date."
+        );
+      }
+
+      /**
+       * Send the updated event details to the API.
+       */
       await updateEventApi(
         eventId,
         {
@@ -205,19 +300,18 @@ export default function EditEventForm({
           eventType: form.eventType,
           thumbnailUrl: form.thumbnailUrl,
           location: form.location,
-          eventDate: new Date(
-            form.eventDate
-          ).toISOString(),
+          eventDate: parsedDate.toISOString(),
         },
         token
       );
 
       setSuccess("Event updated successfully!");
 
-      router.refresh();
-
-      // Navigate to My Events after saving.
+      /**
+       * Navigate back to My Events.
+       */
       router.push("/my-events");
+      router.refresh();
     } catch (err) {
       setError(
         err instanceof Error
@@ -229,28 +323,82 @@ export default function EditEventForm({
     }
   }
 
-  if (loading || sessionPending) {
+  /**
+   * Authentication loading state.
+   */
+  if (sessionPending) {
     return (
-      <div className="py-24 text-center text-sm text-slate-500 dark:text-slate-400">
+      <div className="py-24 text-center text-sm text-(--color-muted)">
+        Checking your session...
+      </div>
+    );
+  }
+
+  /**
+   * Guest state.
+   *
+   * No setState is necessary inside useEffect.
+   */
+  if (!userId) {
+    return (
+      <div className="mx-auto max-w-xl py-20 text-center">
+        <h2 className="text-xl font-bold text-(--color-foreground)">
+          Sign in required
+        </h2>
+
+        <p className="mt-3 text-sm text-(--color-muted)">
+          Please log in to edit this event.
+        </p>
+
+        <Link
+          href="/login"
+          className="mt-6 inline-flex rounded-xl bg-(--color-primary) px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          Go to Login
+        </Link>
+      </div>
+    );
+  }
+
+  /**
+   * Prevent showing stale event information
+   * when eventId or userId changes.
+   */
+  const isCurrentLoad =
+    loadState?.eventId === eventId &&
+    loadState?.userId === userId;
+
+  /**
+   * Event loading state.
+   */
+  if (!isCurrentLoad) {
+    return (
+      <div className="flex min-h-72 items-center justify-center py-24 text-center text-sm text-(--color-muted)">
         Loading event information...
       </div>
     );
   }
 
-  if (error && !form.title) {
+  /**
+   * Event loading or permission error.
+   */
+  if (loadState.status === "error") {
     return (
       <div className="mx-auto max-w-xl py-20 text-center">
-        <h2 className="text-xl font-semibold">
+        <h2 className="text-xl font-bold text-(--color-foreground)">
           Unable to edit event
         </h2>
 
-        <p className="mt-3 text-sm text-red-500">
-          {error}
+        <p
+          role="alert"
+          className="mt-3 text-sm text-red-500"
+        >
+          {loadState.message}
         </p>
 
         <Link
           href="/my-events"
-          className="mt-6 inline-block text-sm font-semibold text-blue-600"
+          className="mt-6 inline-flex text-sm font-semibold text-(--color-primary) hover:underline"
         >
           Back to My Events
         </Link>
@@ -258,52 +406,60 @@ export default function EditEventForm({
     );
   }
 
+  /**
+   * Editable event form.
+   */
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900"
+      className="space-y-6 rounded-2xl border border-(--color-border) bg-(--color-surface) p-5 shadow-sm sm:p-8"
     >
+      {/* Form heading */}
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+        <h2 className="text-xl font-bold text-(--color-foreground)">
           Edit Event Details
         </h2>
 
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-(--color-muted)">
           Update your event information below.
         </p>
       </div>
 
+      {/* Error message */}
       {error && (
         <div
           role="alert"
-          className="rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300"
+          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
         >
           {error}
         </div>
       )}
 
+      {/* Success message */}
       {success && (
         <div
           role="status"
-          className="rounded-xl bg-green-50 p-4 text-sm text-green-700 dark:bg-green-950/30 dark:text-green-300"
+          className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
         >
           {success}
         </div>
       )}
 
+      {/* Event Title */}
       <Field label="Event Title">
         <input
           required
           minLength={5}
           maxLength={120}
           value={form.title}
-          onChange={(e) =>
-            updateField("title", e.target.value)
+          onChange={(event) =>
+            updateField("title", event.target.value)
           }
           className={inputClass}
         />
       </Field>
 
+      {/* Description */}
       <Field label="Description">
         <textarea
           required
@@ -311,71 +467,91 @@ export default function EditEventForm({
           minLength={20}
           maxLength={5000}
           value={form.description}
-          onChange={(e) =>
-            updateField("description", e.target.value)
+          onChange={(event) =>
+            updateField(
+              "description",
+              event.target.value
+            )
           }
           className={inputClass}
         />
       </Field>
 
+      {/* Event Category */}
       <Field label="Event Category">
         <input
           required
           minLength={2}
           maxLength={60}
           value={form.eventType}
-          onChange={(e) =>
-            updateField("eventType", e.target.value)
+          onChange={(event) =>
+            updateField(
+              "eventType",
+              event.target.value
+            )
           }
           className={inputClass}
         />
       </Field>
 
+      {/* Event Location */}
       <Field label="Location">
         <input
           required
           minLength={3}
           maxLength={200}
           value={form.location}
-          onChange={(e) =>
-            updateField("location", e.target.value)
+          onChange={(event) =>
+            updateField(
+              "location",
+              event.target.value
+            )
           }
           className={inputClass}
         />
       </Field>
 
+      {/* Event Date */}
       <Field label="Event Date & Time">
         <input
           required
           type="datetime-local"
           value={form.eventDate}
-          onChange={(e) =>
-            updateField("eventDate", e.target.value)
+          onChange={(event) =>
+            updateField(
+              "eventDate",
+              event.target.value
+            )
           }
           className={inputClass}
         />
       </Field>
 
+      {/* Image URL */}
       <Field label="Image URL">
         <input
           required
           type="url"
           value={form.thumbnailUrl}
-          onChange={(e) =>
-            updateField("thumbnailUrl", e.target.value)
+          onChange={(event) =>
+            updateField(
+              "thumbnailUrl",
+              event.target.value
+            )
           }
           className={inputClass}
         />
 
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-xs leading-5 text-(--color-muted)">
           Use a direct HTTPS image URL or an existing
           CommunityBond upload URL.
         </p>
       </Field>
 
+      {/* Event image preview */}
       {form.thumbnailUrl && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-          {/* Browser preview of the selected URL. */}
+        <div className="overflow-hidden rounded-xl border border-(--color-border)">
+          {/* Existing image preview */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={form.thumbnailUrl}
@@ -388,10 +564,11 @@ export default function EditEventForm({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-6 dark:border-slate-800">
+      {/* Form buttons */}
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-(--color-border) pt-6">
         <Link
           href="/my-events"
-          className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          className="rounded-xl border border-(--color-border) px-5 py-3 text-sm font-semibold text-(--color-foreground) transition hover:bg-(--color-background)"
         >
           Cancel
         </Link>
@@ -399,34 +576,13 @@ export default function EditEventForm({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="cursor-pointer rounded-xl bg-(--color-primary) px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {saving ? "Saving Changes..." : "Save Changes"}
+          {saving
+            ? "Saving Changes..."
+            : "Save Changes"}
         </button>
       </div>
     </form>
-  );
-}
-
-// Shared input styling.
-const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
-
-// Reusable form label.
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
-        {label}
-      </span>
-
-      {children}
-    </label>
   );
 }

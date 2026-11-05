@@ -1,12 +1,7 @@
 
 import type { EventType } from "@/types/event";
 
-/**
- * Supported event categories.
- *
- * WHY:
- * Keep the filter options consistent with EventType.
- */
+
 export type EventCategory = "All" | EventType;
 
 const categories: EventCategory[] = [

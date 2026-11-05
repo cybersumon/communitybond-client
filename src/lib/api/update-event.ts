@@ -1,11 +1,4 @@
 
-/**
- * Update Event API
- *
- * PURPOSE:
- * Send authenticated event updates to
- * the CommunityBond Express backend.
- */
 
 export interface UpdateEventPayload {
   title?: string;

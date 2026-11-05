@@ -2,19 +2,7 @@
 import Link from "next/link";
 import EditEventForm from "@/components/events/EditEventForm";
 
-/**
- * Edit Event Page
- *
- * ROUTE:
- * /events/[id]/edit
- *
- * PURPOSE:
- * Display the event editing form.
- *
- * SECURITY:
- * EditEventForm checks the current session.
- * Express API verifies JWT and event ownership.
- */
+
 
 export default async function EditEventPage({
   params,

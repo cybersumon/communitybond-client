@@ -23,34 +23,12 @@ import {
   RotateCcw,
   Pencil,
   LoaderCircle,
+  Users,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 import DeleteEventButton from "./DeleteEventButton";
 
-/**
- * MyEventsDashboard
- *
- * PURPOSE:
- * Allow authenticated organizers to manage
- * all events they have created.
- *
- * FEATURES:
- * - Secure JWT authenticated event fetching
- * - Total, upcoming, and past statistics
- * - Search events
- * - Filter by event status
- * - View event details
- * - Edit event
- * - Delete event with confirmation
- * - Instant UI update after deletion
- * - Responsive layout
- * - Dark mode support
- *
- * SECURITY:
- * The Express backend determines which events
- * belong to the authenticated organizer.
- */
 
 type EventStatusFilter =
   | "all"
@@ -101,9 +79,9 @@ function formatEventDate(value: string): string {
   }).format(date);
 }
 
-/**
- * Format event time in the browser's timezone.
- */
+
+// Format event time in the browser's timezone.
+
 function formatEventTime(value: string): string {
   const date = new Date(value);
 
@@ -117,9 +95,9 @@ function formatEventTime(value: string): string {
   }).format(date);
 }
 
-/**
- * Determine whether an event is upcoming.
- */
+
+// Determine whether an event is upcoming.
+
 function isUpcomingEvent(
   event: CommunityEvent,
   now: number
@@ -127,9 +105,9 @@ function isUpcomingEvent(
   return new Date(event.eventDate).getTime() >= now;
 }
 
-/**
- * Statistics card.
- */
+
+// Statistics card.
+
 function StatCard({
   title,
   value,
@@ -166,12 +144,6 @@ function StatCard({
   );
 }
 
-/**
- * Organizer event card.
- *
- * The card provides three actions:
- * View Details, Edit, and Delete.
- */
 function MyEventCard({
   event,
   now,
@@ -281,6 +253,15 @@ function MyEventCard({
               Edit
             </Link>
 
+            {/* Organizer-only volunteer management */}
+            <Link
+              href={`/my-events/${event.id}/participants`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 px-3.5 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+            >
+              <Users size={15} />
+              Volunteers
+            </Link>
+
             <DeleteEventButton
               eventId={event.id}
               eventTitle={event.title}
@@ -293,9 +274,9 @@ function MyEventCard({
   );
 }
 
-/**
- * Main My Events dashboard.
- */
+
+// Main My Events dashboard.
+
 export default function MyEventsDashboard() {
   // Better Auth session.
   const {
@@ -309,25 +290,17 @@ export default function MyEventsDashboard() {
   // UI states.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
   const [search, setSearch] = useState("");
   const [filter, setFilter] =
     useState<EventStatusFilter>("all");
 
-  /**
-   * Fetch only the authenticated user's events.
-   *
-   * The backend uses the verified JWT user ID,
-   * rather than accepting a user ID from the client.
-   */
-  useEffect(() => {
-    if (sessionPending) return;
+  const userId = session?.user?.id;
 
-    if (!session?.user) {
-      setEvents([]);
-      setLoading(false);
-      setError("Please log in to view your events.");
-      return;
-    }
+  useEffect(() => {
+    // The guest UI is handled during rendering, not in the effect.
+    // Avoid synchronous state updates inside effects.
+    if (sessionPending || !userId) return;
 
     const controller = new AbortController();
 
@@ -399,16 +372,8 @@ export default function MyEventsDashboard() {
     void loadMyEvents();
 
     return () => controller.abort();
-  }, [session?.user?.id, sessionPending]);
+  }, [userId, sessionPending, retryCount]);
 
-  /**
-   * Delete success callback.
-   *
-   * DeleteEventButton calls this function only
-   * after the backend confirms deletion.
-   *
-   * No full page refresh is required.
-   */
   function handleEventDeleted(deletedEventId: string) {
     setEvents((previousEvents) =>
       previousEvents.filter(
@@ -417,15 +382,11 @@ export default function MyEventsDashboard() {
     );
   }
 
-  /**
-   * Current timestamp used for event status.
-   * Statistics and filters share this value.
-   */
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
 
-  /**
-   * Dashboard statistics.
-   */
+ 
+  // Dashboard statistics.
+ 
   const totalEvents = events.length;
 
   const upcomingCount = events.filter((event) =>
@@ -434,12 +395,6 @@ export default function MyEventsDashboard() {
 
   const pastCount = totalEvents - upcomingCount;
 
-  /**
-   * Search and filter events.
-   *
-   * useMemo avoids repeating filtering on
-   * unrelated component updates.
-   */
   const filteredEvents = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -546,7 +501,7 @@ export default function MyEventsDashboard() {
 
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={() => setRetryCount((value) => value + 1)}
             className="inline-flex shrink-0 items-center gap-1 font-semibold underline"
           >
             <RotateCcw size={14} />

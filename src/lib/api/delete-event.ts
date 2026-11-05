@@ -1,14 +1,4 @@
 
-/**
- * Delete Event API
- *
- * PURPOSE:
- * Delete an organizer-owned event from
- * the CommunityBond Express backend.
- *
- * SECURITY:
- * Uses a JWT issued by Better Auth.
- */
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??

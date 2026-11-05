@@ -6,19 +6,7 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 
-/**
- * EventDetailsModal
- *
- * PURPOSE:
- * Display event details in a centered popup.
- *
- * HOW:
- * Use the same fixed-overlay approach that passed
- * our modal-routing test.
- *
- * No native dialog.showModal() or onClose events
- * are needed, avoiding the previous close loop.
- */
+
 export default function EventDetailsModal({
   children,
 }: {
@@ -27,10 +15,6 @@ export default function EventDetailsModal({
   const router = useRouter();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  /**
-   * Lock background scrolling and support Escape.
-   * Focus the close button when the modal opens.
-   */
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     const previouslyFocused = document.activeElement;
